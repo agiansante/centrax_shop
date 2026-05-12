@@ -13,6 +13,7 @@ Questo indice serve per trovare rapidamente i blocchi memoria senza leggerli tut
 | `2026-05-13-campaign-progress-ui` | 2026-05-13 | feature | `campaign`, `progress`, `frontend`, `backend`, `prisma` | Avanzamento campagne in dashboard | `apps/backend/prisma/schema.prisma`, `apps/frontend/src/ui/DashboardPage.tsx` |
 | `2026-05-13-milestone-method` | 2026-05-13 | decisione | `milestone`, `planning`, `token`, `riuso` | Metodo milestone riutilizzabile | `docs/milestone.md`, `docs/templates/chat-progetto-regole-base.md` |
 | `2026-05-13-product-roadmap` | 2026-05-13 | decisione | `roadmap`, `product`, `catalogo`, `dashboard`, `trend`, `shopify`, `agentic` | Roadmap prodotto futura | `docs/milestone.md`, `docs/diario-giornaliero.md` |
+| `2026-05-13-document-export` | 2026-05-13 | decisione | `docs`, `pdf`, `presentazioni`, `export` | Export documentazione futura | `docs/milestone.md`, `docs/diario-giornaliero.md` |
 
 ## Come cercare
 
@@ -22,3 +23,4 @@ Questo indice serve per trovare rapidamente i blocchi memoria senza leggerli tut
 - Se stai lavorando su avanzamento campagne: cerca tag `campaign`, `progress`, `frontend`, `backend`.
 - Se stai pianificando nuove attivita: cerca tag `milestone`, `planning`, `token`.
 - Se stai lavorando su roadmap prodotto: cerca tag `roadmap`, `product`, `catalogo`, `dashboard`, `trend`, `shopify`, `agentic`.
+- Se stai lavorando su export documentazione: cerca tag `docs`, `pdf`, `presentazioni`, `export`.

@@ -329,3 +329,23 @@ Formato consigliato:
   "prossimo_passo": "Dopo il manuale operativo, definire un formato progetto esportabile o una procedura guidata per aprire lavoro in Codex."
 }
 ```
+
+### M-015 - Export documentazione PDF e presentazioni
+
+```json
+{
+  "id": "M-015",
+  "titolo": "Export documentazione PDF e presentazioni",
+  "stato": "planned",
+  "priorita": "media",
+  "data_creazione": "2026-05-13",
+  "data_inizio": null,
+  "data_fine": null,
+  "impatto_token": "medio",
+  "stima_token": "Serve leggere documentazione esistente e scegliere tool di conversione. Impatto contenuto se si parte da Markdown gia strutturato.",
+  "rischio_contesto": "basso",
+  "blocchi_memoria_utili": ["2026-05-13-product-roadmap", "2026-05-13-milestone-method"],
+  "aree_coinvolte": ["docs", "tooling", "export"],
+  "prossimo_passo": "Scegliere formato target: PDF da Markdown, DOCX, slide HTML o PowerPoint; poi aggiungere script di generazione."
+}
+```

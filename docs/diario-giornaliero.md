@@ -167,6 +167,20 @@ File coinvolti:
 
 Prossimo passo: in una nuova chat ripartire da `M-002` se serve verificare l'avanzamento campagne, oppure scegliere una nuova milestone tra `M-006`, `M-009`, `M-010` e `M-013`.
 
+### Export documentazione futura
+
+Area: documentazione, milestone.
+
+Abbiamo aggiunto una milestone per produrre in futuro documentazione esportabile in PDF, DOCX o presentazioni.
+
+La decisione e mantenere per ora la sorgente in Markdown perche e piu facile da versionare, ma prevedere script di export quando la documentazione sara piu stabile.
+
+File coinvolti:
+
+- `docs/milestone.md`;
+- `docs/ripresa-lavoro.md`;
+- `docs/diario-giornaliero.md`.
+
 ### Avanzamento campagne in UI
 
 Area: backend, frontend, database.

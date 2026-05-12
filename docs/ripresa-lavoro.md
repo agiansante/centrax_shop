@@ -136,6 +136,7 @@ Milestone piu importanti al momento:
 - `M-009`: deduplica servizi tra piu query;
 - `M-010`: dashboard statistiche e filtri avanzati, inclusi parametri testuali liberi;
 - `M-013`: scansione completa sito e manuale connettore Shopify/API.
+- `M-015`: export documentazione PDF e presentazioni.
 
 ## Prompt consigliato per una nuova conversazione
 
