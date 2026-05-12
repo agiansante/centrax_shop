@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+.git
+.terraform
+terraform.tfstate*
+*.log
+apps/frontend/.vite

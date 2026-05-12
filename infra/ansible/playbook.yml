@@ -1,0 +1,64 @@
+- name: Provision Dropship Intel VM
+  hosts: dropship_intel
+  become: true
+  vars:
+    app_dir: /opt/dropship-intel
+  tasks:
+    - name: Install system packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - git
+        update_cache: true
+        state: present
+
+    - name: Install Docker convenience script
+      ansible.builtin.shell: curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    - name: Create app directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Copy production compose
+      ansible.builtin.copy:
+        src: ../production/docker-compose.yml
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+
+    - name: Copy Caddyfile
+      ansible.builtin.copy:
+        src: ../production/Caddyfile
+        dest: "{{ app_dir }}/Caddyfile"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+
+    - name: Copy environment file when present
+      ansible.builtin.copy:
+        src: ../../.env.production
+        dest: "{{ app_dir }}/.env.production"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+      ignore_errors: true
+
+    - name: Pull and restart services
+      ansible.builtin.command: docker compose up -d
+      args:
+        chdir: "{{ app_dir }}"

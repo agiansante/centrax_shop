@@ -1,0 +1,15 @@
+{$DOMAIN_NAME:localhost} {
+  encode gzip
+
+  handle_path /api/* {
+    reverse_proxy backend:3000
+  }
+
+  handle_path /health* {
+    reverse_proxy backend:3000
+  }
+
+  handle {
+    reverse_proxy frontend:80
+  }
+}

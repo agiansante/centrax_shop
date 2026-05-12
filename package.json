@@ -1,0 +1,24 @@
+{
+  "name": "dropshipping-shopify-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo for discovering and analyzing dropshipping services with Shopify compatibility.",
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
+  "scripts": {
+    "dev": "docker compose -f infra/local/docker-compose.yml up --build",
+    "dev:down": "docker compose -f infra/local/docker-compose.yml down",
+    "backend:dev": "npm run dev -w apps/backend",
+    "frontend:dev": "npm run dev -w apps/frontend",
+    "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
+    "test": "npm run test -w apps/backend && npm run test -w apps/frontend",
+    "lint": "npm run lint -w apps/backend && npm run lint -w apps/frontend",
+    "prisma:generate": "npm run prisma:generate -w apps/backend",
+    "prisma:migrate": "npm run prisma:migrate -w apps/backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

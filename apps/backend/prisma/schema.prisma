@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CampaignStatus {
+  DRAFT
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum SiteStatus {
+  DISCOVERED
+  CRAWLED
+  ANALYZED
+  FAILED
+}
+
+enum EvidenceType {
+  SHOPIFY
+  PRICING
+  DOCUMENTATION
+  DROPSHIPPING
+  FULFILLMENT
+  GENERAL
+}
+
+model User {
+  id           String           @id @default(cuid())
+  email        String           @unique
+  passwordHash String
+  role         String           @default("user")
+  createdAt    DateTime         @default(now())
+  campaigns    SearchCampaign[]
+}
+
+model SearchCampaign {
+  id              String           @id @default(cuid())
+  query           String
+  country         String?
+  language        String?          @default("it")
+  depth           Int              @default(2)
+  maxResults      Int              @default(10)
+  status          CampaignStatus   @default(DRAFT)
+  progressStep    String?          @default("draft")
+  progressMessage String?
+  discoveredCount Int              @default(0)
+  analyzedCount   Int              @default(0)
+  failedCount     Int              @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  error           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  ownerId         String
+  owner           User             @relation(fields: [ownerId], references: [id])
+  discoveredSites DiscoveredSite[]
+}
+
+model DiscoveredSite {
+  id          String          @id @default(cuid())
+  url         String
+  domain      String
+  source      String
+  status      SiteStatus      @default(DISCOVERED)
+  title       String?
+  snippet     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  campaignId  String
+  campaign    SearchCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  profile     ServiceProfile?
+
+  @@unique([campaignId, domain])
+}
+
+model ServiceProfile {
+  id                 String         @id @default(cuid())
+  name               String
+  description        String
+  categories         String[]
+  supportedCountries String[]
+  shopifyEvidence    String?
+  pricingSummary     String?
+  docsUrl            String?
+  confidenceScore    Float          @default(0)
+  pros               String[]
+  cons               String[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  siteId             String         @unique
+  site               DiscoveredSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  evidenceItems      EvidenceItem[]
+  analysisRuns       AnalysisRun[]
+}
+
+model EvidenceItem {
+  id        String         @id @default(cuid())
+  type      EvidenceType
+  url       String
+  snippet   String
+  createdAt DateTime       @default(now())
+  profileId String
+  profile   ServiceProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model AnalysisRun {
+  id            String         @id @default(cuid())
+  model         String
+  promptVersion String
+  status        String
+  error         String?
+  createdAt     DateTime       @default(now())
+  profileId     String
+  profile       ServiceProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
