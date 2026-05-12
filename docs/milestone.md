@@ -150,23 +150,23 @@ Formato consigliato:
 }
 ```
 
-### M-006 - Schermata risultati globali
+### M-006 - Catalogo globale siti e fornitori individuati
 
 ```json
 {
   "id": "M-006",
-  "titolo": "Schermata risultati globali",
+  "titolo": "Catalogo globale siti e fornitori individuati",
   "stato": "planned",
   "priorita": "alta",
   "data_creazione": "2026-05-13",
   "data_inizio": null,
   "data_fine": null,
   "impatto_token": "medio-alto",
-  "stima_token": "Serve leggere modello dati, API campagne/servizi e routing frontend. Probabile modifica backend + frontend.",
+  "stima_token": "Serve leggere modello dati, API campagne/servizi, routing frontend e progettare stati operativi di approfondimento, integrazione e prodotti.",
   "rischio_contesto": "medio",
   "blocchi_memoria_utili": ["2026-05-13-campaign-progress-ui", "2026-05-13-product-roadmap"],
   "aree_coinvolte": ["backend", "frontend", "database", "docs"],
-  "prossimo_passo": "Creare endpoint aggregato per tutti i profili servizio e pagina frontend con filtri globali."
+  "prossimo_passo": "Creare una pagina catalogo con tutti i siti individuati, stato ricerca approfondita, stato sviluppo integrazione, accesso ai prodotti trovati e indicazione di vendibilita su Shopify."
 }
 ```
 
@@ -242,11 +242,11 @@ Formato consigliato:
   "data_inizio": null,
   "data_fine": null,
   "impatto_token": "alto",
-  "stima_token": "Richiede definire nuovi campi campagna, UI filtri, API, e possibile arricchimento prompt/analisi.",
+  "stima_token": "Richiede definire nuovi campi campagna, UI filtri, API, e possibile arricchimento prompt/analisi. I parametri avanzati devono supportare testo libero per esigenze specifiche.",
   "rischio_contesto": "medio",
   "blocchi_memoria_utili": ["2026-05-13-product-roadmap"],
   "aree_coinvolte": ["frontend", "backend", "database", "analysis"],
-  "prossimo_passo": "Aggiungere filtri: tipologia prodotto, stringa specifica, personalizzazione/stampa, API personalizzazione immagine, integrazione Shopify."
+  "prossimo_passo": "Aggiungere filtri base come tipologia prodotto e stringa di ricerca, piu parametri avanzati testuali liberi per casi specifici come personalizzazione, stampa, API immagine o integrazione Shopify."
 }
 ```
 

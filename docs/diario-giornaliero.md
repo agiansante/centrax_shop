@@ -140,12 +140,12 @@ Abbiamo fatto una sessione molto produttiva e siamo stati d'accordo nel trasform
 
 Le idee principali emerse:
 
-- schermata globale con tutti i risultati di tutte le campagne;
+- catalogo globale con tutti i siti/fornitori individuati, stato ricerca approfondita, stato integrazione e accesso ai prodotti vendibili su Shopify;
 - dashboard piu accessibili, ordinate e completamente in italiano;
 - schede riepilogo servizio piu utili per decidere se approfondire;
 - deduplica dei servizi trovati tra query diverse;
 - dashboard statistiche;
-- filtri avanzati per tipologia prodotto, ricerca specifica, personalizzazione/stampa, API personalizzazione immagine e integrazione Shopify;
+- filtri avanzati per tipologia prodotto e ricerca specifica, con parametri testuali avanzati liberi per casi come personalizzazione/stampa, API personalizzazione immagine e integrazione Shopify;
 - ricerca agentica su web, social, trend e mercati predittivi per suggerire nuove query;
 - analisi manuale di un sito dropshipping senza partire da una query;
 - scansione completa di un sito con download prodotti e generazione manuale operativo per connettore Shopify/API;

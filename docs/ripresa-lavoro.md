@@ -132,9 +132,9 @@ Milestone piu importanti al momento:
 - `M-002`: osservabilita campagne;
 - `M-003`: healthcheck approfonditi e diagnostica sviluppo;
 - `M-004`: notifiche email fine campagna.
-- `M-006`: schermata risultati globali;
+- `M-006`: catalogo globale siti/fornitori con stati, prodotti e vendibilita Shopify;
 - `M-009`: deduplica servizi tra piu query;
-- `M-010`: dashboard statistiche e filtri avanzati;
+- `M-010`: dashboard statistiche e filtri avanzati, inclusi parametri testuali liberi;
 - `M-013`: scansione completa sito e manuale connettore Shopify/API.
 
 ## Prompt consigliato per una nuova conversazione
