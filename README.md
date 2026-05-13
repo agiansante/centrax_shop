@@ -31,7 +31,17 @@ Servizi locali:
 
 ## Regole di sviluppo
 
+Le istruzioni iniziali per Codex sono in [AGENTS.md](AGENTS.md).
+
 Le regole generali di stile, commenti e leggibilita sono in [docs/regole-generali-codice.md](docs/regole-generali-codice.md).
+
+## Riprendere in una nuova chat
+
+Quando apri una nuova chat sul progetto, usa questa frase:
+
+```text
+Leggi AGENTS.md e riprendi il progetto seguendo quelle istruzioni.
+```
 
 ## Documentazione utile
 
