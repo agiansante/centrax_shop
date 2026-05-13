@@ -219,3 +219,22 @@ File coinvolti:
 - `docs/diario-giornaliero.md`.
 
 Prossimo passo: implementare prima l'MVP di `M-003`: database, Redis, ready, config, normalizzazione URL e regole analisi.
+
+### Visione Centrax
+
+Area: documentazione, architettura, decisione.
+
+Abbiamo iniziato a scrivere la visione di base Centrax: un sistema multi cervello in cui un componente ricerca e acquisisce, uno elabora e gestisce conoscenza, uno applica o attua, e un modulo centrale smista le richieste, media tra componenti e pesa le scelte.
+
+Decisione: creare `docs/visione-centrax.md` e collegarlo alle regole generali, cosi la direzione guida questo progetto e gli altri progetti futuri dello stesso ecosistema.
+
+File coinvolti:
+
+- `docs/visione-centrax.md`;
+- `docs/regole-generali-codice.md`;
+- `docs/ripresa-lavoro.md`;
+- `docs/memory/index.md`;
+- `docs/memory/blocks/2026-05-13-visione-centrax.md`;
+- `docs/diario-giornaliero.md`.
+
+Prossimo passo: espandere nel tempo il formato dei messaggi, il criterio con cui Centrax pesa le scelte e i confini tra modulo centrale e cervelli specialistici.

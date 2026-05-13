@@ -59,6 +59,7 @@ Password: change-me-please
 Leggere prima:
 
 - `docs/regole-generali-codice.md`;
+- `docs/visione-centrax.md`;
 - `docs/api.md`;
 - `docs/diario-giornaliero.md`.
 - `docs/memory/index.md`.
@@ -66,6 +67,7 @@ Leggere prima:
 
 Regole chiave:
 
+- seguire la visione Centrax: sistema multi cervello con modulo centrale che smista richieste, media e pesa le scelte;
 - commenti in italiano sulle funzioni importanti;
 - nomi file esplicativi;
 - stile leggibile per sviluppatori che arrivano da PHP;
@@ -142,6 +144,6 @@ Milestone piu importanti al momento:
 
 ```text
 Sto lavorando al progetto Dropshipping Shopify Intelligence in C:\Prj codex\test1_scraping_db.
-Prima di fare modifiche leggi docs/regole-generali-codice.md, docs/ripresa-lavoro.md, docs/memory/index.md e docs/milestone.md.
+Prima di fare modifiche leggi docs/regole-generali-codice.md, docs/visione-centrax.md, docs/ripresa-lavoro.md, docs/memory/index.md e docs/milestone.md.
 Apri solo i blocchi memoria rilevanti. Continua dalle milestone in corso e mantieni aggiornata solo la documentazione impattata.
 ```

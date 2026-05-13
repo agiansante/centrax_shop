@@ -14,6 +14,7 @@ Questo indice serve per trovare rapidamente i blocchi memoria senza leggerli tut
 | `2026-05-13-milestone-method` | 2026-05-13 | decisione | `milestone`, `planning`, `token`, `riuso` | Metodo milestone riutilizzabile | `docs/milestone.md`, `docs/templates/chat-progetto-regole-base.md` |
 | `2026-05-13-product-roadmap` | 2026-05-13 | decisione | `roadmap`, `product`, `catalogo`, `dashboard`, `trend`, `shopify`, `agentic` | Roadmap prodotto futura | `docs/milestone.md`, `docs/diario-giornaliero.md` |
 | `2026-05-13-document-export` | 2026-05-13 | decisione | `docs`, `pdf`, `presentazioni`, `export` | Export documentazione futura | `docs/milestone.md`, `docs/diario-giornaliero.md` |
+| `2026-05-13-visione-centrax` | 2026-05-13 | decisione | `centrax`, `visione`, `architettura`, `multi-cervello`, `ecosistema` | Visione Centrax multi cervello | `docs/visione-centrax.md`, `docs/regole-generali-codice.md` |
 
 ## Come cercare
 
@@ -24,3 +25,4 @@ Questo indice serve per trovare rapidamente i blocchi memoria senza leggerli tut
 - Se stai pianificando nuove attivita: cerca tag `milestone`, `planning`, `token`.
 - Se stai lavorando su roadmap prodotto: cerca tag `roadmap`, `product`, `catalogo`, `dashboard`, `trend`, `shopify`, `agentic`.
 - Se stai lavorando su export documentazione: cerca tag `docs`, `pdf`, `presentazioni`, `export`.
+- Se stai lavorando sulla visione architetturale Centrax: cerca tag `centrax`, `visione`, `architettura`, `multi-cervello`, `ecosistema`.

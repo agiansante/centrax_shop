@@ -6,6 +6,19 @@ Questo documento definisce lo stile obbligatorio per backend, frontend, infrastr
 
 Il codice deve essere leggibile anche da sviluppatori abituati a PHP classico o Laravel/Symfony. La priorita e chiarezza operativa: chi apre un file deve capire cosa fa, da dove viene chiamato e quali dati riceve/restituisce.
 
+## Visione Centrax
+
+Il progetto deve seguire la visione descritta in `docs/visione-centrax.md`.
+
+Centrax e pensato come un sistema multi cervello:
+
+- un componente ricerca, scopre e acquisisce informazioni;
+- un componente elabora, immagazzina e gestisce conoscenza;
+- un componente applica, attua o produce risultati operativi;
+- un modulo centrale smista le richieste, media tra componenti e pesa le scelte.
+
+Ogni nuova parte del sistema deve avere responsabilita chiara, input e output espliciti, diagnostica mirata e confini comprensibili. I componenti devono poter lavorare in modo indipendente, ma collaborare attraverso contratti chiari e informazioni tracciabili.
+
 ## Commenti obbligatori
 
 - Ogni funzione pubblica, metodo di classe, service method, controller action, hook o helper deve avere un commento in italiano.
@@ -159,6 +172,7 @@ Queste regole devono permettere di riprendere il progetto anche in una nuova con
 All'inizio di una nuova sessione di lavoro bisogna leggere, in questo ordine:
 
 - `docs/regole-generali-codice.md`;
+- `docs/visione-centrax.md`;
 - `docs/ripresa-lavoro.md`;
 - `docs/memory/index.md`;
 - `docs/milestone.md`;
@@ -172,6 +186,7 @@ Per memoria storica dettagliata non caricare tutto il diario o tutta la document
 
 - `docs/memory/index.md` per cercare per tag;
 - `docs/memory/blocks/` per aprire solo i blocchi necessari;
+- `docs/visione-centrax.md` per mantenere allineata la direzione architetturale;
 - `docs/ripresa-lavoro.md` come riassunto breve operativo.
 - `docs/milestone.md` per capire cosa e in corso e cosa fare dopo.
 
