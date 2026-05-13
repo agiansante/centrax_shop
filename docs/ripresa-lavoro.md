@@ -139,6 +139,7 @@ Milestone piu importanti al momento:
 - `M-010`: dashboard statistiche e filtri avanzati, inclusi parametri testuali liberi;
 - `M-013`: scansione completa sito e manuale connettore Shopify/API.
 - `M-015`: export documentazione PDF e presentazioni.
+- `M-016`: pipeline CI/CD per deploy produzione, da riprendere solo quando si prepara produzione o staging.
 
 ## Prompt consigliato per una nuova conversazione
 

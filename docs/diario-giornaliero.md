@@ -238,3 +238,19 @@ File coinvolti:
 - `docs/diario-giornaliero.md`.
 
 Prossimo passo: espandere nel tempo il formato dei messaggi, il criterio con cui Centrax pesa le scelte e i confini tra modulo centrale e cervelli specialistici.
+
+### Pipeline CI/CD produzione
+
+Area: infrastruttura, deploy, pianificazione.
+
+Abbiamo deciso di ricordare che l'infrastruttura dovra prevedere pipeline CI/CD per build, test e deploy controllato.
+
+Decisione: aggiungere una milestone dedicata, ma non lavorarci adesso. In locale non e necessaria; andra ripresa quando prepareremo un ambiente di produzione o staging stabile.
+
+File coinvolti:
+
+- `docs/milestone.md`;
+- `docs/ripresa-lavoro.md`;
+- `docs/diario-giornaliero.md`.
+
+Prossimo passo: quando si avvicina il deploy produzione, progettare pipeline con build backend/frontend, test, gestione segreti, immagini Docker e deploy tramite infrastruttura esistente.

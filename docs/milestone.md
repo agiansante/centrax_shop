@@ -373,3 +373,25 @@ Regola importante: tutti gli endpoint `/diagnostics/...` devono essere disponibi
   "prossimo_passo": "Scegliere formato target: PDF da Markdown, DOCX, slide HTML o PowerPoint; poi aggiungere script di generazione."
 }
 ```
+
+### M-016 - Pipeline CI/CD per deploy produzione
+
+```json
+{
+  "id": "M-016",
+  "titolo": "Pipeline CI/CD per deploy produzione",
+  "stato": "planned",
+  "priorita": "media",
+  "data_creazione": "2026-05-13",
+  "data_inizio": null,
+  "data_fine": null,
+  "impatto_token": "medio-alto",
+  "stima_token": "Richiede leggere infrastruttura Docker, Terraform, Ansible, gestione segreti, strategia branch e flusso deploy. Non serve per sviluppo locale immediato.",
+  "rischio_contesto": "medio",
+  "blocchi_memoria_utili": ["2026-05-12-bootstrap-progetto"],
+  "aree_coinvolte": ["infra", "backend", "frontend", "docs", "ci-cd"],
+  "prossimo_passo": "Rimandare finche non si prepara il primo deploy produzione; poi progettare pipeline con build, test, push immagini, gestione segreti e deploy controllato."
+}
+```
+
+Nota: questa milestone non e necessaria per lavorare in locale. Va ripresa quando il progetto sara pronto per un ambiente di produzione o staging stabile.
