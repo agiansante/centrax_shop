@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
 
 /**
  * Rappresenta i dati inviati dal frontend per creare una campagna di ricerca.
@@ -15,6 +15,14 @@ export class CreateCampaignRequestDto {
   @ApiProperty({ example: 'dropshipping suppliers with Shopify integration' })
   @IsString()
   query!: string;
+
+  @IsOptional()
+  @IsString()
+  searchPrompt?: string;
+
+  @IsOptional()
+  @IsObject()
+  outputSchema?: Record<string, unknown>;
 
   @IsOptional()
   @IsString()

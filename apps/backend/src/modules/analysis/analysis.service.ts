@@ -1,20 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { EvidenceType, SiteStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { CrawlerService } from './crawler.service';
 import { DiscoveryService } from './discovery.service';
+import { ResearchAgentService } from './research-agent.service';
 import { RulesService } from './rules.service';
 import { extractComparableDomain, normalizeUrlForStorage } from './url-normalization.utils';
 
 @Injectable()
 export class AnalysisService {
+  private readonly logger = new Logger(AnalysisService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly discovery: DiscoveryService,
     private readonly crawler: CrawlerService,
     private readonly rules: RulesService,
-    private readonly ai: AiService
+    private readonly ai: AiService,
+    private readonly researchAgent: ResearchAgentService
   ) {}
 
   /**
@@ -26,6 +30,18 @@ export class AnalysisService {
    * Riceve l'id campagna dal job BullMQ.
    */
   async runCampaign(campaignId: string) {
+    return this.researchAgent.runCampaign(campaignId);
+  }
+
+  /**
+   * Esegue la vecchia pipeline lineare di discovery e analisi.
+   *
+   * Usata da:
+   * - mantenuta come riferimento tecnico durante la migrazione agentica.
+   *
+   * Riceve l'id campagna dal job BullMQ.
+   */
+  async runLegacyCampaign(campaignId: string) {
     const campaign = await this.prisma.searchCampaign.findUniqueOrThrow({ where: { id: campaignId } });
     await this.prisma.searchCampaign.update({
       where: { id: campaignId },
@@ -46,31 +62,57 @@ export class AnalysisService {
       }
     });
 
+    let analyzedCount = 0;
+    let failedCount = 0;
+
     for (const result of results) {
+      let siteId: string | null = null;
+      let domain = result.url;
+
       try {
         const url = normalizeUrlForStorage(result.url);
-        const domain = extractComparableDomain(url);
+        domain = extractComparableDomain(url);
         const site = await this.prisma.discoveredSite.upsert({
           where: { campaignId_domain: { campaignId, domain } },
           update: { url, title: result.title, snippet: result.snippet, source: result.source },
           create: { campaignId, url, domain, title: result.title, snippet: result.snippet, source: result.source }
         });
+        siteId = site.id;
 
         await this.prisma.searchCampaign.update({
           where: { id: campaignId },
-          data: { progressMessage: `Analisi sito ${domain} in corso.` }
+          data: {
+            currentAnalyzedUrl: url,
+            progressMessage: `Analisi sito ${domain} in corso.`
+          }
         });
 
         await this.analyzeSite(site.id, campaign.depth);
+        analyzedCount += 1;
 
         await this.prisma.searchCampaign.update({
           where: { id: campaignId },
-          data: { analyzedCount: { increment: 1 } }
+          data: {
+            analyzedCount: { increment: 1 },
+            progressMessage: `Analisi completata per ${domain}. Avanzamento: ${analyzedCount + failedCount}/${results.length}.`
+          }
         });
-      } catch {
+      } catch (error) {
+        failedCount += 1;
+        this.logger.warn(`Analisi sito fallita per ${domain}: ${error instanceof Error ? error.message : String(error)}`);
+        if (siteId) {
+          await this.prisma.discoveredSite.update({
+            where: { id: siteId },
+            data: { status: SiteStatus.FAILED }
+          });
+        }
+
         await this.prisma.searchCampaign.update({
           where: { id: campaignId },
-          data: { failedCount: { increment: 1 } }
+          data: {
+            failedCount: { increment: 1 },
+            progressMessage: `Analisi fallita per ${domain}. Avanzamento: ${analyzedCount + failedCount}/${results.length}.`
+          }
         });
       }
     }

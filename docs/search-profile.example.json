@@ -1,0 +1,111 @@
+{
+  "id": "dropshipping-shopify-strong-integration-v1",
+  "name": "Servizi dropshipping con integrazione forte Shopify",
+  "version": 1,
+  "goal": {
+    "entityType": "service_provider",
+    "whatToFind": "Siti e servizi che offrono dropshipping o fulfillment con integrazione forte con Shopify",
+    "mustHave": [
+      "servizio dropshipping, print-on-demand, supplier marketplace o fulfillment",
+      "integrazione Shopify dichiarata",
+      "pagina pubblica con prove leggibili",
+      "possibile uso operativo da parte di un merchant Shopify"
+    ],
+    "niceToHave": [
+      "documentazione API o developer docs",
+      "pagina pricing",
+      "catalogo prodotti o categorie",
+      "paesi supportati",
+      "evidenza di app Shopify ufficiale"
+    ],
+    "rejectWhen": [
+      "articolo informativo senza servizio proprio",
+      "agenzia generica senza piattaforma/prodotto",
+      "sito non raggiungibile o solo pagina placeholder",
+      "nessuna evidenza Shopify o dropshipping"
+    ]
+  },
+  "search": {
+    "engine": "mock | tavily | serpapi | future-google-custom-search | future-browser-search",
+    "strategy": "continue_until_enough_qualified_results",
+    "maxQualifiedResults": 10,
+    "maxRawResults": 50,
+    "dedupeBy": "registrable_domain",
+    "queries": [
+      "dropshipping suppliers Shopify integration",
+      "Shopify dropshipping app supplier fulfillment",
+      "Shopify print on demand dropshipping supplier",
+      "dropshipping platform Shopify API"
+    ],
+    "country": null,
+    "language": "it",
+    "stopWhen": {
+      "qualifiedResultsReached": 10,
+      "rawResultsScanned": 50,
+      "consecutiveNoNewDomains": 15
+    }
+  },
+  "crawl": {
+    "method": "http_html_cheerio",
+    "futureMethods": ["browser_rendering_playwright", "sitemap_scan", "robots_aware_scan", "ocr_tesseract_for_images"],
+    "maxDepth": 2,
+    "maxPagesPerSite": 6,
+    "sameDomainOnly": true,
+    "candidatePathHints": [
+      "shopify",
+      "integrations",
+      "apps",
+      "pricing",
+      "docs",
+      "documentation",
+      "api",
+      "fulfillment",
+      "dropshipping",
+      "suppliers"
+    ],
+    "extract": {
+      "htmlText": true,
+      "links": true,
+      "title": true,
+      "metaDescription": true,
+      "structuredData": true,
+      "imagesOcr": false
+    }
+  },
+  "classification": {
+    "method": "rules_then_ai",
+    "minimumConfidenceScore": 0.65,
+    "requiredEvidenceTypes": ["DROPSHIPPING", "SHOPIFY"],
+    "rules": {
+      "SHOPIFY": ["shopify app", "shopify integration", "connect to shopify", "shopify store"],
+      "DROPSHIPPING": ["dropship", "dropshipping", "supplier", "product sourcing"],
+      "FULFILLMENT": ["fulfillment", "warehouse", "shipping", "inventory"],
+      "DOCUMENTATION": ["docs", "documentation", "api reference", "developer"],
+      "PRICING": ["pricing", "price", "free trial", "monthly"]
+    },
+    "ai": {
+      "enabledWhenApiKeyPresent": true,
+      "model": "OPENAI_MODEL",
+      "decisionPrompt": "Valuta se il sito e una fonte qualificata per il profilo ricerca e restituisci JSON strutturato."
+    }
+  },
+  "fieldMapping": {
+    "serviceProfile.name": "nome servizio o dominio",
+    "serviceProfile.description": "descrizione sintetica del servizio",
+    "serviceProfile.categories": "categorie servizio rilevate",
+    "serviceProfile.supportedCountries": "paesi o aree supportate",
+    "serviceProfile.shopifyEvidence": "snippet o pagina che prova integrazione Shopify",
+    "serviceProfile.pricingSummary": "informazioni pricing",
+    "serviceProfile.docsUrl": "URL documentazione/API",
+    "serviceProfile.confidenceScore": "punteggio 0-1",
+    "evidenceItems": "prove testuali con tipo, URL e snippet",
+    "discoveredSite.status": "DISCOVERED | CRAWLED | ANALYZED | REJECTED | FAILED"
+  },
+  "outputPolicy": {
+    "saveOnlyQualifiedSources": true,
+    "saveRejectedForDiagnostics": true,
+    "explainDecision": true,
+    "storeRawHtml": false,
+    "storeCrawledTextPreview": true
+  }
+}

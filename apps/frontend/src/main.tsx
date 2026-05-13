@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './ui/AppShell';
 import { CampaignDetailPage } from './ui/CampaignDetailPage';
+import { ConfigurationPage } from './ui/ConfigurationPage';
 import { DashboardPage } from './ui/DashboardPage';
 import { LoginPage } from './ui/LoginPage';
 import { ServiceDetailPage } from './ui/ServiceDetailPage';
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             }
           >
             <Route index element={<DashboardPage />} />
+            <Route path="configuration" element={<ConfigurationPage />} />
             <Route path="campaigns/:id" element={<CampaignDetailPage />} />
             <Route path="services/:id" element={<ServiceDetailPage />} />
           </Route>

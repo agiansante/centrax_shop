@@ -43,6 +43,8 @@ model User {
 model SearchCampaign {
   id              String           @id @default(cuid())
   query           String
+  searchPrompt    String?
+  outputSchema    Json?
   country         String?
   language        String?          @default("it")
   depth           Int              @default(2)
@@ -50,9 +52,19 @@ model SearchCampaign {
   status          CampaignStatus   @default(DRAFT)
   progressStep    String?          @default("draft")
   progressMessage String?
+  currentAnalyzedUrl String?
   discoveredCount Int              @default(0)
+  rawResultCount  Int              @default(0)
+  uniqueResultCount Int            @default(0)
   analyzedCount   Int              @default(0)
+  qualifiedCount  Int              @default(0)
+  rejectedCount   Int              @default(0)
   failedCount     Int              @default(0)
+  agentPlanStatus String?
+  agentStopReason String?
+  agentProviderSummary Json?
+  agentToolSummary Json?
+  agentFinalOutput Json?
   startedAt       DateTime?
   completedAt     DateTime?
   error           String?
@@ -61,6 +73,20 @@ model SearchCampaign {
   ownerId         String
   owner           User             @relation(fields: [ownerId], references: [id])
   discoveredSites DiscoveredSite[]
+  agentLogs       AgentRunLog[]
+}
+
+model AgentRunLog {
+  id          String         @id @default(cuid())
+  campaignId  String
+  campaign    SearchCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  level       String         @default("info")
+  step        String
+  message     String
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+
+  @@index([campaignId, createdAt])
 }
 
 model DiscoveredSite {

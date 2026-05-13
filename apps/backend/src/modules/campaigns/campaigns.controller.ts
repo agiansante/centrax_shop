@@ -77,4 +77,17 @@ export class CampaignsController {
   results(@Req() request: Request & { user: JwtUser }, @Param('id') id: string) {
     return this.campaigns.results(request.user.userId, id);
   }
+
+  /**
+   * Restituisce il terminale agente di una campagna.
+   *
+   * Usata da:
+   * - apps/frontend/src/ui/DashboardPage.tsx
+   *
+   * Include eventi ordinati di planning, discovery, crawling e classificazione.
+   */
+  @Get(':id/agent-logs')
+  agentLogs(@Req() request: Request & { user: JwtUser }, @Param('id') id: string) {
+    return this.campaigns.agentLogsForCampaign(request.user.userId, id);
+  }
 }

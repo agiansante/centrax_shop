@@ -24,6 +24,7 @@ Stati possibili:
 
 - `planned`: pianificata, non iniziata;
 - `in_progress`: iniziata;
+- `in_test`: implementata, in verifica prima della chiusura;
 - `blocked`: bloccata;
 - `done`: completata;
 - `cancelled`: annullata.
@@ -34,7 +35,7 @@ Formato consigliato:
 {
   "id": "M-001",
   "titolo": "Titolo breve",
-  "stato": "planned | in_progress | blocked | done | cancelled",
+  "stato": "planned | in_progress | in_test | blocked | done | cancelled",
   "priorita": "alta | media | bassa",
   "data_creazione": "YYYY-MM-DD",
   "data_inizio": null,
@@ -76,19 +77,44 @@ Formato consigliato:
 {
   "id": "M-002",
   "titolo": "Migliorare osservabilita campagne",
-  "stato": "in_progress",
+  "stato": "in_test",
   "priorita": "alta",
   "data_creazione": "2026-05-13",
   "data_inizio": "2026-05-13",
   "data_fine": null,
   "impatto_token": "medio-alto",
-  "stima_token": "Richiede leggere backend worker, Prisma, API frontend e dashboard. Conviene procedere in blocchi piccoli.",
-  "rischio_contesto": "medio",
+  "stima_token": "Richiede leggere backend worker, Prisma, API frontend, dashboard e ora anche discovery/crawling/classificazione perche il test ha mostrato che maxResults e provider mock non rappresentano ancora una ricerca reale.",
+  "rischio_contesto": "alto",
   "blocchi_memoria_utili": ["2026-05-13-campaign-progress-ui"],
-  "aree_coinvolte": ["backend", "frontend", "database", "docs"],
-  "prossimo_passo": "Riavviare stack, applicare migrazione e verificare popup avanzamento campagna."
+  "aree_coinvolte": ["backend", "frontend", "database", "docs", "discovery", "crawler", "analysis"],
+  "prossimo_passo": "Completare i task di test/ricerca sotto questa milestone prima di chiuderla: rendere visibile il provider, impedire fallback mock nascosti e chiarire/implementare il comportamento di maxResults."
 }
 ```
+
+Nota di processo: una milestone implementata non passa direttamente a `done`. Prima deve restare in `in_test`, con verifica tecnica e test manuale/accettazione completati.
+
+Nota test: durante la verifica e emerso che la ricerca locale torna sempre 3 risultati perche il provider `mock` contiene solo tre URL e non continua a cercare fino a `maxResults`. Questo blocca la chiusura di `M-002`: l'osservabilita deve far capire chiaramente quando una campagna usa mock/demo e quando non ha raggiunto il numero richiesto.
+
+Task residui su `M-002` prima della chiusura:
+
+- mostrare in dashboard/API quale provider discovery e in uso: `mock`, `tavily`, `serpapi` o altro;
+- mostrare se la campagna e in modalita demo/mock, senza confonderla con ricerca reale;
+- distinguere `maxResults richiesti`, `risultati grezzi trovati`, `siti analizzati`, `fonti qualificate` e `siti rifiutati`;
+- cambiare il messaggio finale quando `discoveredCount < maxResults`, ad esempio: ricerca terminata per esaurimento risultati provider;
+- impedire che il fallback mock venga usato in modo silenzioso quando l'utente si aspetta una ricerca reale;
+- aggiungere diagnostica/config per vedere provider ricerca, chiavi configurate senza segreti, provider AI e limiti crawler;
+- verificare manualmente una campagna con provider mock e una con provider reale configurato, se disponibile;
+- documentare in `docs/analisi-ricerca-centrax.md` il flusso reale e i limiti rimasti;
+- lasciare `M-002` in `in_test` finche questi punti non sono verificati.
+
+Task di evoluzione collegati, da implementare nella milestone `M-017` se non si vuole allargare troppo `M-002`:
+
+- profilo ricerca JSON configurabile;
+- ricerca multi-query e multi-pagina fino a `maxResults` qualificati;
+- salvataggio separato di siti qualificati, rifiutati e falliti;
+- scoring fonte con regole e AI;
+- crawler con strategie configurabili: HTML semplice, sitemap, browser rendering, eventuale OCR/Tesseract;
+- mapping configurabile dei campi da risolvere.
 
 ### M-003 - Healthcheck approfonditi e diagnostica sviluppo
 
@@ -395,3 +421,61 @@ Regola importante: tutti gli endpoint `/diagnostics/...` devono essere disponibi
 ```
 
 Nota: questa milestone non e necessaria per lavorare in locale. Va ripresa quando il progetto sara pronto per un ambiente di produzione o staging stabile.
+
+### M-017 - Cervello ricerca configurabile e ricerca fino a max risultati qualificati
+
+```json
+{
+  "id": "M-017",
+  "titolo": "Cervello ricerca configurabile e ricerca fino a max risultati qualificati",
+  "stato": "in_test",
+  "priorita": "alta",
+  "data_creazione": "2026-05-13",
+  "data_inizio": "2026-05-13",
+  "data_fine": null,
+  "impatto_token": "alto",
+  "stima_token": "Implementata e verificata prima versione agentica con Tavily e OpenAI reali. Dopo i test generalisti e emerso che il flusso e vivo ma ranking, pre-filtro, generazione query e qualita estrazione devono essere raffinati molto.",
+  "rischio_contesto": "medio",
+  "blocchi_memoria_utili": ["2026-05-13-campaign-progress-ui", "2026-05-13-visione-centrax", "2026-05-13-agentic-research-plan"],
+  "aree_coinvolte": ["backend", "crawler", "analysis", "database", "docs", "frontend", "agent", "tool-registry"],
+  "prossimo_passo": "Riprendere migliorando processo di ricerca: query planning, pre-filtro discovery, scoring fonte, esclusione risultati non pertinenti e campi null/unresolved quando i dati non sono presenti."
+}
+```
+
+Piano operativo sintetico `M-017`:
+
+1. Fatto: aggiunti a campagna `searchPrompt` e `outputSchema`.
+2. Fatto: creati contratti standard per tool di ricerca, crawler, classificazione e provider AI.
+3. Fatto: creato `ResearchToolRegistryService` con descrizione tool, input e output.
+4. Fatto: creato `ResearchAgentService` che coordina ricerca, crawling, classificazione, merge e output finale.
+5. Parziale: creato `ResearchPlanningService` deterministico; planning AI multi-provider resta evoluzione successiva.
+6. Fatto: aggiunta configurazione frontend per provider ricerca e provider AI.
+7. Fatto: implementato popup terminale con log agente e riepilogo JSON finale.
+8. Fatto: implementati merge, deduplica e conteggi fonti qualificate/rifiutate.
+9. Parziale: Tavily e SerpAPI restano usati tramite discovery esistente; provider aggiuntivi sono descritti come predisposti.
+10. Fatto: build e test automatici passati in Docker; test manuale con Tavily e OpenAI reali riuscito con 5 fonti qualificate su 5 richieste.
+
+Esito test reale dropshipping:
+
+- query: `print on demand suppliers Shopify integration Europe`;
+- risultati grezzi: 14;
+- domini unici: 11;
+- fonti qualificate: 5;
+- stop reason: raggiunto il numero massimo di fonti qualificate richieste;
+- criticita emersa: alcune fonti qualificate sono utili come contesto ma non sono fornitori diretti, per esempio Reddit. Serve migliorare filtro e scoring.
+
+Aggiornamento generalista:
+
+- aggiunta estrazione AI basata su obiettivo e `outputSchema`;
+- aggiunto `sourceType` per distinguere sito diretto, marketplace/directory, articolo, forum/social, media e fonte non operativa;
+- la qualificazione non dipende piu da `shopifyEvidence`;
+- forum/social/media vengono esclusi di default come fonti operative salvo richiesta esplicita.
+
+Esito test generalista `venditori macchine luxury usate Lombardia`:
+
+- miglioramento: query non contiene piu suffissi hardcoded Shopify/dropshipping;
+- miglioramento: alcuni risultati social/media vengono scartati prima del crawl;
+- problema: risultati Shopify possono ancora passare se intercettano parole generiche come `luxury`;
+- problema: l'AI/fallback puo riempire campi contatto con testo rumoroso invece di marcarli irrisolti;
+- problema: serve ragionamento piu forte su pertinenza dominio, luogo, entita e attributi richiesti;
+- decisione: `M-017` resta `in_test` e domani si riparte dal miglioramento di ranking/pre-filtro/estrazione.

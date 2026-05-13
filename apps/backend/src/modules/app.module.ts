@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ResearchConfigurationModule } from './research-configuration/research-configuration.module';
 import { ServicesModule } from './services/services.module';
 import { WorkersModule } from './workers/workers.module';
 
@@ -13,6 +14,7 @@ import { WorkersModule } from './workers/workers.module';
     PrismaModule,
     AuthModule,
     CampaignsModule,
+    ResearchConfigurationModule,
     ServicesModule,
     WorkersModule,
     HealthModule

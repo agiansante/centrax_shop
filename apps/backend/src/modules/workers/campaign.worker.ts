@@ -46,19 +46,25 @@ export class CampaignWorker implements OnModuleInit, OnModuleDestroy {
         startedAt: new Date(),
         completedAt: null,
         progressStep: 'running',
-        progressMessage: 'Worker avviato. Preparazione analisi campagna.'
+        progressMessage: 'Worker avviato. Preparazione analisi campagna.',
+        currentAnalyzedUrl: null
       }
     });
 
     try {
       await this.analysis.runCampaign(campaignId);
+      const campaignAfterAnalysis = await this.prisma.searchCampaign.findUnique({ where: { id: campaignId } });
+      const completedMessage = campaignAfterAnalysis?.agentStopReason
+        ? `Campagna completata. ${campaignAfterAnalysis.agentStopReason}`
+        : 'Campagna completata. I risultati sono disponibili.';
       await this.prisma.searchCampaign.update({
         where: { id: campaignId },
         data: {
           status: CampaignStatus.COMPLETED,
           completedAt: new Date(),
           progressStep: 'completed',
-          progressMessage: 'Campagna completata. I risultati sono disponibili.'
+          progressMessage: completedMessage,
+          currentAnalyzedUrl: null
         }
       });
     } catch (error) {
@@ -69,6 +75,7 @@ export class CampaignWorker implements OnModuleInit, OnModuleDestroy {
           completedAt: new Date(),
           progressStep: 'failed',
           progressMessage: 'Campagna terminata con errore.',
+          currentAnalyzedUrl: null,
           error: error instanceof Error ? error.message : 'Unknown campaign error'
         }
       });

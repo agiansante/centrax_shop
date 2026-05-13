@@ -82,6 +82,16 @@ async createCampaignForUser(userId: string, data: CreateCampaignDto) {
 - La logica di scraping/crawling deve restare separata dalla logica di classificazione.
 - Gli errori devono essere espliciti e in italiano quando arrivano all'utente finale.
 
+## Dati mock, fallback e provider reali
+
+- Non usare dati mock, demo o fallback come comportamento operativo nascosto.
+- I dati mock sono ammessi solo se concordati esplicitamente, documentati e visibili nell'interfaccia o nella diagnostica.
+- Se una feature dichiara di cercare dati reali, deve usare un provider reale configurato oppure segnalare chiaramente che la configurazione manca.
+- Un fallback mock non deve far sembrare completata una ricerca reale.
+- Quando un provider reale non e configurato, il backend deve restituire uno stato/messaggio esplicito, oppure usare una modalita demo chiaramente indicata.
+- Ogni configurazione di provider deve essere tracciabile in documentazione, env example, healthcheck o endpoint diagnostico.
+- Nei test automatizzati si possono usare mock, ma il nome del test e il setup devono renderlo evidente.
+
 ## Healthcheck e diagnostica di sviluppo
 
 Il progetto deve distinguere tra healthcheck di servizio e diagnostica tecnica.

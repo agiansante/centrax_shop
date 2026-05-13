@@ -31,7 +31,7 @@ services:
       dockerfile: apps/backend/Dockerfile
       target: dev
     env_file:
-      - ../../.env.local.example
+      - ../../.env.local
     environment:
       DATABASE_URL: postgresql://app:app@postgres:5432/dropshipping_intel?schema=public
       REDIS_HOST: redis

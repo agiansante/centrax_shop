@@ -122,6 +122,14 @@ Payload:
 ```json
 {
   "query": "dropshipping suppliers Shopify integration",
+  "searchPrompt": "Trova servizi con integrazione Shopify, pricing chiaro e documentazione tecnica.",
+  "outputSchema": {
+    "name": "string",
+    "url": "string",
+    "shopifyEvidence": "string",
+    "pricingSummary": "string",
+    "confidenceScore": "number"
+  },
   "country": "Italy",
   "language": "it",
   "depth": 2
@@ -131,6 +139,8 @@ Payload:
 Campi:
 
 - `query`: testo principale della ricerca;
+- `searchPrompt`: prompt esteso usato dal planner del cervello ricerca;
+- `outputSchema`: schema JSON semplice dei campi richiesti nell'output finale;
 - `country`: paese opzionale per orientare la ricerca;
 - `language`: lingua opzionale, default `it`;
 - `depth`: profondita crawl da 1 a 5.
@@ -147,9 +157,19 @@ Ogni campagna include anche campi di avanzamento:
 - `maxResults`: limite massimo richiesto;
 - `progressStep`: fase corrente, per esempio `draft`, `queued`, `discovery`, `analysis`, `completed`, `failed`;
 - `progressMessage`: messaggio leggibile su cosa sta facendo il sistema;
+- `currentAnalyzedUrl`: URL attualmente in analisi, valorizzata durante crawling/analisi e svuotata a fine campagna;
 - `discoveredCount`: siti trovati;
+- `rawResultCount`: risultati grezzi restituiti dai tool ricerca;
+- `uniqueResultCount`: domini unici dopo merge/deduplica;
 - `analyzedCount`: siti analizzati;
+- `qualifiedCount`: fonti qualificate per l'output finale;
+- `rejectedCount`: fonti analizzate ma rifiutate;
 - `failedCount`: siti falliti durante analisi;
+- `agentPlanStatus`: stato del piano agente;
+- `agentStopReason`: motivo leggibile per cui la ricerca si e fermata;
+- `agentProviderSummary`: provider ricerca usato e stato configurazione senza segreti;
+- `agentToolSummary`: tool pianificati e disponibili;
+- `agentFinalOutput`: riepilogo JSON finale della ricerca agentica;
 - `startedAt`: quando il worker ha iniziato;
 - `completedAt`: quando la campagna e finita.
 
@@ -177,6 +197,30 @@ Nota: il job gira nel backend. Se il browser o il frontend vengono chiusi, il pr
 Restituisce i siti scoperti e i profili servizio analizzati.
 
 Richiede token JWT.
+
+### `GET /campaigns/:id/agent-logs`
+
+Restituisce il terminale agente della campagna.
+
+Richiede token JWT.
+
+Ogni voce include:
+
+- `level`: `info`, `warning` o `error`;
+- `step`: fase agente, per esempio `planning`, `discovery`, `crawl`, `classification`;
+- `message`: testo leggibile;
+- `metadata`: dati tecnici opzionali senza segreti;
+- `createdAt`: data evento.
+
+## Configurazione ricerca
+
+### `GET /research-configuration`
+
+Restituisce provider ricerca, provider AI, tool registry e limiti predisposti senza esporre API key o segreti.
+
+Richiede token JWT.
+
+Serve alla pagina frontend **Configurazione** per mostrare se il sistema usa modalita demo/mock o provider reali.
 
 ## Servizi
 

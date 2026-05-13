@@ -1,5 +1,5 @@
-import { LogOut, Search } from 'lucide-react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { LogOut, Search, Settings } from 'lucide-react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -12,9 +12,13 @@ export function AppShell() {
           <span>Dropship Intel</span>
         </div>
         <nav>
-          <button className="navButton active" onClick={() => navigate('/')}>
+          <NavLink className={({ isActive }) => (isActive ? 'navButton active' : 'navButton')} to="/">
             Campagne
-          </button>
+          </NavLink>
+          <NavLink className={({ isActive }) => (isActive ? 'navButton active' : 'navButton')} to="/configuration">
+            <Settings size={16} />
+            Configurazione
+          </NavLink>
         </nav>
         <button
           className="iconTextButton"

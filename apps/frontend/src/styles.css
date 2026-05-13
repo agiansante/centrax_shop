@@ -13,7 +13,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -106,11 +107,36 @@ input {
   background: white;
 }
 
+textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid #c8d1da;
+  border-radius: 6px;
+  background: white;
+}
+
+.campaignForm {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
 .toolbar {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) 180px 120px 130px auto;
   gap: 12px;
-  margin-bottom: 20px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #dfe4ea;
+  border-radius: 8px;
+}
+
+.agentFormGrid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+  gap: 12px;
   padding: 14px;
   background: #ffffff;
   border: 1px solid #dfe4ea;
@@ -155,6 +181,7 @@ input {
   width: 100%;
   justify-content: flex-start;
   padding: 0 12px;
+  text-decoration: none;
 }
 
 .active,
@@ -187,7 +214,7 @@ input {
 .tableHead,
 .tableRow {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) 130px 100px 90px;
+  grid-template-columns: minmax(220px, 1fr) 120px minmax(220px, 1.2fr) 90px 100px 90px;
   gap: 16px;
   align-items: center;
   padding: 14px 16px;
@@ -227,9 +254,21 @@ input {
   text-decoration: underline;
 }
 
+.truncateText {
+  min-width: 0;
+  overflow: hidden;
+  color: #5d6d7e;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakText {
+  overflow-wrap: anywhere;
+}
+
 .summaryStrip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -411,7 +450,9 @@ input {
 .modalPanel {
   display: grid;
   gap: 18px;
-  width: min(620px, 100%);
+  width: min(860px, 100%);
+  max-height: min(860px, calc(100vh - 48px));
+  overflow: auto;
   padding: 22px;
   background: white;
   border: 1px solid #dfe4ea;
@@ -430,6 +471,124 @@ input {
 }
 
 .modalHeader p {
+  margin: 0;
+  color: #5d6d7e;
+}
+
+.terminalPanel,
+.jsonSummary,
+.configGrid section,
+.toolList {
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #dfe4ea;
+  border-radius: 8px;
+}
+
+.terminalPanel h3,
+.jsonSummary h3,
+.configGrid h2,
+.toolList h2,
+.toolList h3 {
+  margin: 0 0 10px;
+}
+
+.terminalLog {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 12px;
+  background: #111827;
+  border-radius: 6px;
+  color: #dbeafe;
+}
+
+.terminalLine {
+  display: grid;
+  grid-template-columns: 74px 110px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.terminalLine span {
+  color: #93c5fd;
+}
+
+.terminalLine strong {
+  color: #fef3c7;
+}
+
+.terminalLine.warning p {
+  color: #fed7aa;
+}
+
+.terminalLine.error p {
+  color: #fecaca;
+}
+
+.terminalLine p {
+  margin: 0;
+}
+
+.jsonSummary pre {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+
+.configGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.providerList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.providerBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef3f5;
+  color: #34495e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.providerBadge.connected {
+  background: #e7f6ee;
+  color: #117a45;
+}
+
+.toolList {
+  display: grid;
+  gap: 12px;
+}
+
+.toolList article {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid #edf0f2;
+  border-radius: 6px;
+}
+
+.toolList p {
   margin: 0;
   color: #5d6d7e;
 }
@@ -455,10 +614,12 @@ input {
   }
 
   .toolbar,
+  .agentFormGrid,
   .tableHead,
   .tableRow,
   .detailLayout,
-  .summaryStrip {
+  .summaryStrip,
+  .configGrid {
     grid-template-columns: 1fr;
   }
 

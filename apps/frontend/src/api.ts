@@ -3,6 +3,8 @@ const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 export interface Campaign {
   id: string;
   query: string;
+  searchPrompt?: string | null;
+  outputSchema?: Record<string, unknown> | null;
   country?: string;
   language?: string;
   depth: number;
@@ -10,14 +12,58 @@ export interface Campaign {
   status: 'DRAFT' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
   progressStep?: string;
   progressMessage?: string;
+  currentAnalyzedUrl?: string | null;
   discoveredCount: number;
+  rawResultCount: number;
+  uniqueResultCount: number;
   analyzedCount: number;
+  qualifiedCount: number;
+  rejectedCount: number;
   failedCount: number;
+  agentPlanStatus?: string | null;
+  agentStopReason?: string | null;
+  agentProviderSummary?: Record<string, unknown> | null;
+  agentToolSummary?: Record<string, unknown> | null;
+  agentFinalOutput?: Record<string, unknown> | null;
   startedAt?: string | null;
   completedAt?: string | null;
   error?: string;
   createdAt: string;
   _count?: { discoveredSites: number };
+}
+
+export interface AgentRunLog {
+  id: string;
+  level: 'info' | 'warning' | 'error';
+  step: string;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ResearchConfiguration {
+  search: {
+    selectedProvider: string;
+    isMockMode: boolean;
+    configuredProviders: Record<string, boolean>;
+  };
+  ai: {
+    selectedProvider: string;
+    selectedModel: string;
+    configuredProviders: Record<string, boolean>;
+    fallbackMode: boolean;
+  };
+  tools: Array<{
+    name: string;
+    description: string;
+    configured: boolean;
+    inputSchema: Record<string, unknown>;
+    outputSchema: Record<string, unknown>;
+  }>;
+  limits: {
+    normalUserSearchProviders: number;
+    premiumUserSearchProviders: number;
+  };
 }
 
 export interface ServiceProfile {
@@ -120,7 +166,15 @@ function loadCampaigns() {
  *
  * Riceve query, paese opzionale, lingua e profondita crawl.
  */
-function createCampaign(payload: { query: string; country?: string; language?: string; depth: number; maxResults: number }) {
+function createCampaign(payload: {
+  query: string;
+  searchPrompt?: string;
+  outputSchema?: Record<string, unknown>;
+  country?: string;
+  language?: string;
+  depth: number;
+  maxResults: number;
+}) {
   return request<Campaign>('/campaigns', { method: 'POST', body: JSON.stringify(payload) });
 }
 
@@ -146,6 +200,28 @@ function runCampaign(id: string) {
  */
 function loadCampaignResults(id: string) {
   return request<DiscoveredSite[]>(`/campaigns/${id}/results`);
+}
+
+/**
+ * Carica i log agente di una campagna.
+ *
+ * Usata da:
+ * - apps/frontend/src/ui/DashboardPage.tsx
+ *
+ * Riceve id campagna e restituisce eventi ordinati per il terminale live.
+ */
+function loadCampaignAgentLogs(id: string) {
+  return request<AgentRunLog[]>(`/campaigns/${id}/agent-logs`);
+}
+
+/**
+ * Carica configurazione ricerca e AI senza segreti.
+ *
+ * Usata da:
+ * - apps/frontend/src/ui/ConfigurationPage.tsx
+ */
+function loadResearchConfiguration() {
+  return request<ResearchConfiguration>('/research-configuration');
 }
 
 /**
@@ -178,7 +254,9 @@ export const api = {
   campaigns: loadCampaigns,
   createCampaign,
   runCampaign,
+  campaignAgentLogs: loadCampaignAgentLogs,
   campaignResults: loadCampaignResults,
   service: loadServiceProfile,
-  reanalyze: reanalyzeServiceProfile
+  reanalyze: reanalyzeServiceProfile,
+  researchConfiguration: loadResearchConfiguration
 };

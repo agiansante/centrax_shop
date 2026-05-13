@@ -131,7 +131,7 @@ Per capire cosa e in corso leggere `docs/milestone.md`.
 
 Milestone piu importanti al momento:
 
-- `M-002`: osservabilita campagne;
+- `M-002`: osservabilita campagne in test, da verificare manualmente in dashboard prima della chiusura;
 - `M-003`: healthcheck approfonditi e diagnostica sviluppo;
 - `M-004`: notifiche email fine campagna.
 - `M-006`: catalogo globale siti/fornitori con stati, prodotti e vendibilita Shopify;
@@ -140,11 +140,35 @@ Milestone piu importanti al momento:
 - `M-013`: scansione completa sito e manuale connettore Shopify/API.
 - `M-015`: export documentazione PDF e presentazioni.
 - `M-016`: pipeline CI/CD per deploy produzione, da riprendere solo quando si prepara produzione o staging.
+- `M-017`: cervello ricerca configurabile e ricerca fino a max risultati qualificati.
+- Piano dettagliato ricerca agentica: `docs/piano-ricerca-agentica-centrax.md`.
+
+Stato ricerca agentica:
+
+- prima versione implementata e in test;
+- campagna supporta `searchPrompt`, `outputSchema`, conteggi agente e output JSON finale;
+- backend espone log agente con `GET /campaigns/:id/agent-logs`;
+- frontend ha pagina `Configurazione` e popup terminale agente;
+- build backend/frontend e test automatici passano in Docker;
+- provider reale Tavily + OpenAI verificato;
+- resta da migliorare molto il ragionamento di ricerca prima di chiudere `M-017`.
+
+Punto esatto da cui riprendere domani:
+
+- query test: `venditori macchine luxury usate Lombardia`;
+- problema: discovery e crawling funzionano, ma ranking e pre-filtro lasciano passare risultati non pertinenti come Shopify;
+- problema: alcuni campi output vengono riempiti con testo rumoroso invece di restare `null`/irrisolti;
+- prossimo lavoro: creare o raffinare un `DiscoveryPreFilterService`, migliorare query planning, scoring fonte e regole di estrazione campi.
+
+Regola stato milestone:
+
+- quando una milestone sembra finita, passarla prima a `in_test`;
+- chiuderla come `done` solo dopo test manuale/accettazione completato.
 
 ## Prompt consigliato per una nuova conversazione
 
 ```text
 Sto lavorando al progetto Dropshipping Shopify Intelligence in C:\Prj codex\test1_scraping_db.
 Prima di fare modifiche leggi docs/regole-generali-codice.md, docs/visione-centrax.md, docs/ripresa-lavoro.md, docs/memory/index.md e docs/milestone.md.
-Apri solo i blocchi memoria rilevanti. Continua dalle milestone in corso e mantieni aggiornata solo la documentazione impattata.
+Apri solo i blocchi memoria rilevanti. Per il cervello ricerca agentico leggi anche docs/piano-ricerca-agentica-centrax.md e il blocco memoria 2026-05-13-agentic-research-plan. Continua dalle milestone in corso e mantieni aggiornata solo la documentazione impattata.
 ```

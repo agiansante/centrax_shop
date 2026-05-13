@@ -152,6 +152,8 @@ In questa applicazione:
 
 Le future feature devono essere progettate tenendo presente questa separazione.
 
+Nota importante: anche se il primo caso pratico e dropshipping/Shopify, il cervello ricerca deve restare generalista. Deve poter ricevere obiettivi e schemi diversi, per esempio cercare indirizzi di aziende, prodotti specifici, contatti, documenti o qualunque altra informazione catalogabile. La specializzazione deve stare nel prompt, nello schema output e nelle regole configurabili, non nel cuore dell'agente.
+
 ## Direzione futura
 
 Questa visione andra sviluppata meglio nel tempo.
