@@ -204,3 +204,18 @@ File coinvolti:
 - `apps/frontend/src/api.ts`.
 
 Prossimo passo: implementare notifiche email con provider SMTP o servizio email dedicato.
+
+### Dettaglio healthcheck e diagnostica sviluppo
+
+Area: documentazione, backend, debug.
+
+Abbiamo chiarito che la specializzazione dell'healthcheck non e ancora implementata nel codice: oggi esiste solo `GET /health`.
+
+Decisione: dettagliare nella milestone `M-003` tutti gli endpoint da creare, distinguendo healthcheck di servizio e diagnostica sviluppo. Gli endpoint diagnostici servono a testare pezzi piccoli mentre si scrive codice, senza dover attraversare ogni volta frontend, login, campagna e job completo.
+
+File coinvolti:
+
+- `docs/milestone.md`;
+- `docs/diario-giornaliero.md`.
+
+Prossimo passo: implementare prima l'MVP di `M-003`: database, Redis, ready, config, normalizzazione URL e regole analisi.

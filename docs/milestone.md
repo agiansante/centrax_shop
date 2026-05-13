@@ -106,9 +106,33 @@ Formato consigliato:
   "rischio_contesto": "medio",
   "blocchi_memoria_utili": ["2026-05-13-project-memory-system", "2026-05-12-auth-bcrypt-import"],
   "aree_coinvolte": ["backend", "docs", "tests"],
-  "prossimo_passo": "Implementare /health/database, /health/redis, /health/ready e primi /diagnostics solo sviluppo."
+  "prossimo_passo": "Implementare prima gli endpoint MVP: /health/database, /health/redis, /health/ready, /diagnostics/config, /diagnostics/analysis/url-normalization e /diagnostics/analysis/rules."
 }
 ```
+
+Dettaglio operativo endpoint da creare:
+
+| Endpoint | Tipo | Scopo | Uso durante sviluppo |
+| --- | --- | --- | --- |
+| `GET /health` | healthcheck base | Confermare che il backend NestJS risponde. | Primo controllo rapido dopo avvio server o container. |
+| `GET /health/database` | healthcheck dipendenza | Verificare connessione PostgreSQL con query minima. | Testare Prisma, schema, migrazioni, `DATABASE_URL` e container database. |
+| `GET /health/redis` | healthcheck dipendenza | Verificare connessione Redis con controllo leggero. | Testare Redis prima di lavorare su code e job campagne. |
+| `GET /health/queue` | healthcheck dipendenza | Verificare che BullMQ riesca a leggere lo stato della coda campagne. | Capire se i job possono partire o se la coda e bloccata. |
+| `GET /health/ready` | healthcheck aggregato | Verificare backend, database, Redis e coda in un solo controllo. | Usarlo prima di test manuali completi dell'app. |
+| `GET /health/config` | healthcheck configurazione | Controllare configurazione minima senza esporre segreti. | Capire se mancano variabili essenziali per backend, database, Redis, JWT, OpenAI o discovery. |
+| `GET /health/openai` | healthcheck configurazione | Indicare se OpenAI e configurato, senza chiamate costose di default. | Capire se l'analisi AI usera provider reale o fallback mock/euristico. |
+| `GET /health/discovery` | healthcheck configurazione | Indicare quale provider discovery e attivo. | Capire se le campagne stanno usando mock o ricerca reale. |
+| `GET /diagnostics/config` | diagnostica sviluppo | Mostrare configurazione attiva senza segreti. | Debug rapido di ambiente e provider mentre si sviluppa. |
+| `POST /diagnostics/auth/hash-password` | diagnostica sviluppo | Testare hashing e confronto password. | Verificare auth senza creare utenti reali. |
+| `POST /diagnostics/auth/login-flow` | diagnostica sviluppo | Testare il flusso login con input controllato. | Verificare auth, JWT, guard e DTO login. |
+| `POST /diagnostics/analysis/rules` | diagnostica sviluppo | Eseguire solo le regole locali su testo o HTML fornito. | Migliorare classificazione Shopify/dropshipping senza lanciare campagne complete. |
+| `POST /diagnostics/analysis/url-normalization` | diagnostica sviluppo | Testare normalizzazione URL, dominio e deduplica base. | Preparare deduplica, catalogo globale e pulizia URL. |
+| `POST /diagnostics/analysis/crawl-url` | diagnostica sviluppo | Testare il crawler su un singolo URL. | Capire se un sito e scaricabile e quale testo viene estratto. |
+| `POST /diagnostics/analysis/analyze-url` | diagnostica sviluppo | Eseguire crawler, regole e AI/mock su un singolo URL. | Mini test completo prima di creare o rilanciare campagne. |
+| `GET /diagnostics/campaigns/queue` | diagnostica sviluppo | Mostrare stato sintetico della coda campagne. | Vedere job in attesa, attivi o falliti. |
+| `POST /diagnostics/campaigns/reset-stuck` | diagnostica sviluppo | Resettare campagne bloccate in sviluppo. | Recuperare campagne rimaste `QUEUED` o `RUNNING` dopo stop container o crash worker. |
+
+Regola importante: tutti gli endpoint `/diagnostics/...` devono essere disponibili solo con `NODE_ENV !== production` e non devono mai esporre segreti, token o password.
 
 ### M-004 - Notifiche email fine campagna
 
