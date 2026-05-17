@@ -111,9 +111,9 @@ Authorization: Bearer <token>
 
 ## Campagne
 
-### `POST /campaigns`
+### `POST /campaigns/preview-plan`
 
-Crea una nuova campagna di ricerca.
+Prepara il piano tecnico prima di creare la campagna.
 
 Richiede token JWT.
 
@@ -121,30 +121,60 @@ Payload:
 
 ```json
 {
-  "query": "dropshipping suppliers Shopify integration",
-  "searchPrompt": "Trova servizi con integrazione Shopify, pricing chiaro e documentazione tecnica.",
-  "outputSchema": {
-    "name": "string",
-    "url": "string",
-    "shopifyEvidence": "string",
-    "pricingSummary": "string",
-    "confidenceScore": "number"
+  "userRequest": "Trova venditori di macchine luxury usate in Lombardia con contatti verificabili.",
+  "depth": 2,
+  "maxResults": 10,
+  "currentPlan": null,
+  "revisionRequest": null
+}
+```
+
+Comportamento:
+
+- usa il provider AI configurato per trasformare la richiesta libera in piano operativo;
+- conosce i tool disponibili e i parametri accettati;
+- restituisce query ottimizzate, segnali positivi/negativi, domini esclusi, formato output, strumenti e strategia;
+- se l'AI non e configurata, restituisce un piano fallback esplicito con avviso.
+
+Il frontend usa questa risposta per aprire il popup di conferma prima della creazione reale.
+
+### `POST /campaigns`
+
+Crea una nuova campagna di ricerca dopo approvazione del piano.
+
+Richiede token JWT.
+
+Payload:
+
+```json
+{
+  "userRequest": "Trova venditori di macchine luxury usate in Lombardia con contatti verificabili.",
+  "approvedResearchPlan": {
+    "status": "ai_planned",
+    "goal": "Trovare venditori di auto luxury usate in Lombardia",
+    "optimizedQueries": ["venditori auto luxury usate Lombardia"],
+    "outputSchema": {
+      "name": "string",
+      "url": "string",
+      "phone": "string|null"
+    },
+    "tools": ["configured_search", "crawler_html", "rules_classifier"]
   },
-  "country": "Italy",
   "language": "it",
-  "depth": 2
+  "depth": 2,
+  "maxResults": 10
 }
 ```
 
 Campi:
 
-- `query`: testo principale della ricerca;
-- `searchPrompt`: prompt esteso usato dal planner del cervello ricerca;
-- `outputSchema`: schema JSON semplice dei campi richiesti nell'output finale;
-- `country`: paese opzionale per orientare la ricerca;
+- `userRequest`: richiesta naturale scritta dall'utente;
+- `approvedResearchPlan`: piano generato da `/campaigns/preview-plan` e approvato dal popup;
 - `language`: lingua opzionale, default `it`;
 - `depth`: profondita crawl da 1 a 5.
 - `maxResults`: numero massimo di risultati da richiedere al discovery, da 1 a 50.
+
+Nota: i vecchi campi interni `query`, `searchPrompt` e `outputSchema` restano salvati sulla campagna per compatibilita con il worker, ma non sono piu compilati manualmente dall'utente.
 
 ### `GET /campaigns`
 

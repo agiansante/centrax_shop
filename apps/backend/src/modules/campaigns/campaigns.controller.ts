@@ -4,7 +4,7 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { JwtUser } from '../auth/jwt.strategy';
 import { CampaignsService } from './campaigns.service';
-import { CreateCampaignRequestDto } from './create-campaign-request.dto';
+import { CreateCampaignRequestDto, PreviewCampaignPlanRequestDto } from './create-campaign-request.dto';
 
 @ApiTags('campaigns')
 @ApiBearerAuth()
@@ -13,6 +13,19 @@ import { CreateCampaignRequestDto } from './create-campaign-request.dto';
 export class CampaignsController {
   constructor(private readonly campaigns: CampaignsService) {}
 
+  @Post('preview-plan')
+  /**
+   * Prepara il piano ricerca prima della creazione campagna.
+   *
+   * Usata da:
+   * - apps/frontend/src/ui/DashboardPage.tsx
+   *
+   * Riceve richiesta libera, depth, maxResults e possibile revisione.
+   */
+  previewPlan(@Body() dto: PreviewCampaignPlanRequestDto) {
+    return this.campaigns.previewPlan(dto);
+  }
+
   @Post()
   /**
    * Crea una campagna di ricerca per l'utente autenticato.
@@ -20,7 +33,7 @@ export class CampaignsController {
    * Usata da:
    * - apps/frontend/src/ui/DashboardPage.tsx
    *
-   * Riceve query e parametri opzionali dal body HTTP.
+   * Riceve richiesta utente e piano approvato dal body HTTP.
    */
   create(@Req() request: Request & { user: JwtUser }, @Body() dto: CreateCampaignRequestDto) {
     return this.campaigns.create(request.user.userId, dto);

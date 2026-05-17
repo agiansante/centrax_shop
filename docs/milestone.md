@@ -434,11 +434,11 @@ Nota: questa milestone non e necessaria per lavorare in locale. Va ripresa quand
   "data_inizio": "2026-05-13",
   "data_fine": null,
   "impatto_token": "alto",
-  "stima_token": "Implementata e verificata prima versione agentica con Tavily e OpenAI reali. Dopo i test generalisti e emerso che il flusso e vivo ma ranking, pre-filtro, generazione query e qualita estrazione devono essere raffinati molto.",
+  "stima_token": "Implementata prima versione agentica e aggiunto flusso richiesta libera -> preview piano -> conferma utente. Restano test manuali e raffinamento ranking/qualita estrazione.",
   "rischio_contesto": "medio",
   "blocchi_memoria_utili": ["2026-05-13-campaign-progress-ui", "2026-05-13-visione-centrax", "2026-05-13-agentic-research-plan"],
   "aree_coinvolte": ["backend", "crawler", "analysis", "database", "docs", "frontend", "agent", "tool-registry"],
-  "prossimo_passo": "Riprendere migliorando processo di ricerca: query planning, pre-filtro discovery, scoring fonte, esclusione risultati non pertinenti e campi null/unresolved quando i dati non sono presenti."
+  "prossimo_passo": "Applicare migrazione Prisma, provare manualmente il popup piano con provider reale, poi continuare scoring fonte e qualita estrazione su casi generalisti."
 }
 ```
 
@@ -454,6 +454,10 @@ Piano operativo sintetico `M-017`:
 8. Fatto: implementati merge, deduplica e conteggi fonti qualificate/rifiutate.
 9. Parziale: Tavily e SerpAPI restano usati tramite discovery esistente; provider aggiuntivi sono descritti come predisposti.
 10. Fatto: build e test automatici passati in Docker; test manuale con Tavily e OpenAI reali riuscito con 5 fonti qualificate su 5 richieste.
+11. Fatto: nuova UI creazione campagna con sola richiesta libera, `depth` e `maxResults`.
+12. Fatto: aggiunto endpoint `POST /campaigns/preview-plan` con popup di conferma, revisione piano e creazione solo dopo approvazione.
+13. Fatto: aggiunto `ResearchIntentBuilderService` e `DiscoveryPreFilterService`; il piano approvato alimenta query, segnali, domini esclusi, tool e output schema.
+14. Fatto: rimossi suffissi hardcoded Shopify/dropshipping dalle query provider reali Tavily/SerpAPI.
 
 Esito test reale dropshipping:
 
@@ -475,7 +479,56 @@ Esito test generalista `venditori macchine luxury usate Lombardia`:
 
 - miglioramento: query non contiene piu suffissi hardcoded Shopify/dropshipping;
 - miglioramento: alcuni risultati social/media vengono scartati prima del crawl;
-- problema: risultati Shopify possono ancora passare se intercettano parole generiche come `luxury`;
-- problema: l'AI/fallback puo riempire campi contatto con testo rumoroso invece di marcarli irrisolti;
-- problema: serve ragionamento piu forte su pertinenza dominio, luogo, entita e attributi richiesti;
-- decisione: `M-017` resta `in_test` e domani si riparte dal miglioramento di ranking/pre-filtro/estrazione.
+- miglioramento implementato: il piano ricerca puo ora includere domini bloccati e segnali negativi prima del crawl;
+- miglioramento implementato: fallback estrazione lascia null i campi contatto sensibili invece di riempirli con testo generico;
+- problema residuo: serve test manuale con provider reale per valutare quanto l'AI costruisce bene piano, schema output e blacklist;
+- decisione: `M-017` resta `in_test` fino a verifica manuale del nuovo flusso e ulteriori test su ranking/pre-filtro.
+
+### M-018 - Centrax Search Test1 quality gate 70%
+
+```json
+{
+  "id": "M-018",
+  "titolo": "Centrax Search Test1 quality gate 70%",
+  "stato": "in_progress",
+  "priorita": "alta",
+  "data_creazione": "2026-05-14",
+  "data_inizio": "2026-05-14",
+  "data_fine": null,
+  "impatto_token": "alto",
+  "stima_token": "Fase test avviata: prima correzione su diagnostica pre_filter e conflitti Shopify/dropshipping completata. Restano validazione manuale, quality gate UI e iterazioni su ranking/estrazione.",
+  "rischio_contesto": "alto",
+  "blocchi_memoria_utili": ["2026-05-14-centrax-search-test1", "2026-05-13-agentic-research-plan"],
+  "aree_coinvolte": ["backend", "frontend", "agent", "provider", "crawler", "analysis", "docs", "test"],
+  "prossimo_passo": "Valutare manualmente le 10 fonti qualificate del ritest Shopify/dropshipping e implementare nel popup finale validazione utile/non utile, export JSON test e calcolo soglia 70%."
+}
+```
+
+Regola approvazione:
+
+- il blocco di sviluppo passa la fase test solo se `risultati_utili_validati / risultati_valutati >= 70%`;
+- ogni test deve salvare richiesta utente, parametri, piano approvato, output JSON, log agente, validazione utente, analisi e task correttivi;
+- se il risultato resta sotto soglia, si modifica il cervello ricerca e si ripete il ciclo.
+
+Checklist implementazione `M-018`:
+
+- popup finale con tabella risultati, dettaglio, JSON, log e piano approvato;
+- fatto: terminale agente con motivazione dettagliata dei log `pre_filter`;
+- validazione manuale `utile` / `non utile` con note;
+- calcolo `usefulRate` e gate 70%;
+- JSON test copiabile per Codex;
+- scenari test prodotti prima di ogni esecuzione;
+- studio ottimizzazioni Tavily e SerpAPI;
+- studio provider aggiuntivi Brave, Google CSE, Exa, You.com;
+- contratto adapter per collegare facilmente nuove fonti dati;
+- miglioramento iterativo di planning, pre-filtro, ranking, crawler ed estrazione.
+
+Nota test 2026-05-14:
+
+- primo test dropshipping/Shopify: 24 risultati grezzi, 16 domini unici, 0 fonti qualificate;
+- tutte le fonti sono state scartate dal pre-filtro prima del crawl;
+- correzione completata: il terminale mostra metadata dettagliati `pre_filter` e il pre-filtro ignora negativi che coincidono con positivi richiesti;
+- ritest dopo diagnostica: 22 risultati grezzi, 15 domini unici, 8 fonti qualificate, 3 scarti pre-filtro leggibili;
+- ritest dopo regola anti-conflitto: 25 risultati grezzi, 19 domini unici, 10 fonti qualificate, 0 scarti pre-filtro, stop per massimo risultati raggiunto.
+- bug successivo risolto: `non-dropshipping` nei segnali negativi veniva interpretato come match fuzzy di `dropshipping`;
+- ciclo automatico runner: 28 risultati grezzi, 21 domini unici, 13 analizzati, 10 qualificati, useful rate euristico 80%, gate 70% superato.

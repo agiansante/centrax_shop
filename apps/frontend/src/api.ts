@@ -3,8 +3,10 @@ const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 export interface Campaign {
   id: string;
   query: string;
+  userRequest?: string | null;
   searchPrompt?: string | null;
   outputSchema?: Record<string, unknown> | null;
+  approvedResearchPlan?: ResearchExecutionPlan | null;
   country?: string;
   language?: string;
   depth: number;
@@ -39,6 +41,40 @@ export interface AgentRunLog {
   message: string;
   metadata?: Record<string, unknown> | null;
   createdAt: string;
+}
+
+export interface ResearchExecutionPlan {
+  status: 'fallback' | 'ai_planned';
+  userRequest: string;
+  goal: string;
+  entityType: string;
+  searchPrompt: string;
+  optimizedQueries: string[];
+  requiredSignals: string[];
+  negativeSignals: string[];
+  blockedDomains: string[];
+  allowedSourceTypes: string[];
+  outputSchema: Record<string, unknown>;
+  tools: string[];
+  strategy: string;
+  warnings: string[];
+  aiGenerated: boolean;
+}
+
+export interface CampaignPlanPreview {
+  plan: ResearchExecutionPlan;
+  summary: {
+    goal: string;
+    entityType: string;
+    importantSignals: string[];
+    negativeSignals: string[];
+    blockedDomains: string[];
+    outputSchema: Record<string, unknown>;
+    tools: string[];
+    strategy: string;
+    warnings: string[];
+    aiGenerated: boolean;
+  };
 }
 
 export interface ResearchConfiguration {
@@ -167,15 +203,32 @@ function loadCampaigns() {
  * Riceve query, paese opzionale, lingua e profondita crawl.
  */
 function createCampaign(payload: {
-  query: string;
-  searchPrompt?: string;
-  outputSchema?: Record<string, unknown>;
+  userRequest: string;
+  approvedResearchPlan?: ResearchExecutionPlan;
   country?: string;
   language?: string;
   depth: number;
   maxResults: number;
 }) {
   return request<Campaign>('/campaigns', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+/**
+ * Prepara il piano ricerca prima di creare una campagna.
+ *
+ * Usata da:
+ * - apps/frontend/src/ui/DashboardPage.tsx
+ *
+ * Riceve richiesta libera, limiti e possibile revisione del piano.
+ */
+function previewCampaignPlan(payload: {
+  userRequest: string;
+  currentPlan?: ResearchExecutionPlan;
+  revisionRequest?: string;
+  depth: number;
+  maxResults: number;
+}) {
+  return request<CampaignPlanPreview>('/campaigns/preview-plan', { method: 'POST', body: JSON.stringify(payload) });
 }
 
 /**
@@ -252,6 +305,7 @@ export const api = {
   login: loginUser,
   register: registerUser,
   campaigns: loadCampaigns,
+  previewCampaignPlan,
   createCampaign,
   runCampaign,
   campaignAgentLogs: loadCampaignAgentLogs,

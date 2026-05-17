@@ -141,24 +141,41 @@ Milestone piu importanti al momento:
 - `M-015`: export documentazione PDF e presentazioni.
 - `M-016`: pipeline CI/CD per deploy produzione, da riprendere solo quando si prepara produzione o staging.
 - `M-017`: cervello ricerca configurabile e ricerca fino a max risultati qualificati.
+- `M-018`: Centrax Search Test1, quality gate 70% sui risultati utili validati.
 - Piano dettagliato ricerca agentica: `docs/piano-ricerca-agentica-centrax.md`.
+- Piano fase test ricerca: `docs/fase-test-sperimentazione-centrax-search.md`.
 
 Stato ricerca agentica:
 
 - prima versione implementata e in test;
-- campagna supporta `searchPrompt`, `outputSchema`, conteggi agente e output JSON finale;
+- la creazione campagna ora parte da una richiesta libera utente piu `depth` e `maxResults`;
+- backend prepara un piano con `POST /campaigns/preview-plan`, poi il frontend mostra popup di conferma/modifica;
+- campagna salva internamente `searchPrompt`, `outputSchema`, piano approvato, conteggi agente e output JSON finale;
 - backend espone log agente con `GET /campaigns/:id/agent-logs`;
 - frontend ha pagina `Configurazione` e popup terminale agente;
 - build backend/frontend e test automatici passano in Docker;
 - provider reale Tavily + OpenAI verificato;
-- resta da migliorare molto il ragionamento di ricerca prima di chiudere `M-017`.
+- resta da verificare manualmente il nuovo popup piano con provider reale prima di chiudere `M-017`.
 
 Punto esatto da cui riprendere domani:
 
 - query test: `venditori macchine luxury usate Lombardia`;
-- problema: discovery e crawling funzionano, ma ranking e pre-filtro lasciano passare risultati non pertinenti come Shopify;
-- problema: alcuni campi output vengono riempiti con testo rumoroso invece di restare `null`/irrisolti;
-- prossimo lavoro: creare o raffinare un `DiscoveryPreFilterService`, migliorare query planning, scoring fonte e regole di estrazione campi.
+- verificare che il popup piano individui correttamente entita, luogo, segnali positivi/negativi, domini esclusi e output;
+- migrazione Prisma `20260514000000_research_plan_preview` gia applicata nello stack locale Docker Compose;
+- debug aperto: il popup mostra `Provider AI non configurato o piano AI non disponibile: strategia generata con fallback locale`;
+- risolto: il planner AI ora distingue errori, normalizza `warnings`, array/oggetti e tool provider;
+- risolto: alias provider come Tavily/SerpAPI vengono mappati a `configured_search`;
+- risolto: il popup piano mostra strumenti coerenti e la generazione ricerca funziona bene;
+- risolto primo debug dropshipping/Shopify: il terminale agente mostra metadata dettagliati degli scarti `pre_filter`;
+- risolto primo alleggerimento pre-filtro: Shopify/dropshipping non vengono piu penalizzati se sono segnali positivi richiesti dal piano;
+- ritest dropshipping/Shopify dopo correzione: 25 risultati grezzi, 19 domini unici, 10 fonti qualificate, 4 rifiutate, 0 errori, stop per massimo risultati raggiunto;
+- aggiunto spinner su `Prepara ricerca` e seconda protezione pre-filtro per segnali forti Shopify/dropshipping/integration;
+- backend e frontend sono stati riavviati dopo il ritest utente che mostrava ancora log vecchi senza metadata;
+- risolto bug `non-dropshipping`: i segnali negativi non usano piu fuzzy match e non scartano risultati dropshipping pertinenti;
+- aggiunto runner automatico `scripts/run-centrax-search-test1.mjs`;
+- ultimo ciclo automatico: 28 grezzi, 21 domini unici, 13 analizzati, 10 qualificati, useful rate euristico 80%, gate 70% superato;
+- prossimo lavoro: valutare manualmente le 10 fonti qualificate e implementare validazione `utile/non utile`, note, export JSON test e quality gate 70%.
+- fase test successiva: implementare validazione manuale utile/non utile nel popup finale e produrre JSON test per raggiungere soglia 70%.
 
 Regola stato milestone:
 
@@ -170,5 +187,5 @@ Regola stato milestone:
 ```text
 Sto lavorando al progetto Dropshipping Shopify Intelligence in C:\Prj codex\test1_scraping_db.
 Prima di fare modifiche leggi docs/regole-generali-codice.md, docs/visione-centrax.md, docs/ripresa-lavoro.md, docs/memory/index.md e docs/milestone.md.
-Apri solo i blocchi memoria rilevanti. Per il cervello ricerca agentico leggi anche docs/piano-ricerca-agentica-centrax.md e il blocco memoria 2026-05-13-agentic-research-plan. Continua dalle milestone in corso e mantieni aggiornata solo la documentazione impattata.
+Apri solo i blocchi memoria rilevanti. Per il cervello ricerca agentico leggi anche docs/piano-ricerca-agentica-centrax.md e i blocchi memoria 2026-05-13-agentic-research-plan e 2026-05-14-centrax-search-test1. Continua da M-018: la diagnostica `pre_filter` e la regola anti-conflitto Shopify/dropshipping sono state implementate e il ritest ha prodotto 10 fonti qualificate su 19 domini unici. Prossimo passo: validazione manuale utile/non utile, note, export JSON test e quality gate 70%.
 ```

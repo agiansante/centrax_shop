@@ -7,6 +7,8 @@ import { CrawledPage } from './crawler.service';
 import { DiscoveryResult } from './discovery.service';
 import { OutputSchemaValidationService } from './output-schema-validation.service';
 import { ResultMergeAgentService } from './result-merge-agent.service';
+import { DiscoveryPreFilterService } from './discovery-pre-filter.service';
+import { ResearchExecutionPlan } from './research-intent-builder.service';
 import { ResearchPlanningService } from './research-planning.service';
 import { ResearchToolRegistryService } from './research-tool-registry.service';
 import { ExtractedEvidence } from './rules.service';
@@ -30,6 +32,7 @@ export class ResearchAgentService {
     private readonly prisma: PrismaService,
     private readonly toolRegistry: ResearchToolRegistryService,
     private readonly planning: ResearchPlanningService,
+    private readonly preFilter: DiscoveryPreFilterService,
     private readonly mergeAgent: ResultMergeAgentService,
     private readonly outputSchemaValidation: OutputSchemaValidationService,
     private readonly logs: AgentRunLogService,
@@ -48,8 +51,9 @@ export class ResearchAgentService {
   async runCampaign(campaignId: string) {
     const campaign = await this.prisma.searchCampaign.findUniqueOrThrow({ where: { id: campaignId } });
     const outputSchema = this.readOutputSchema(campaign.outputSchema);
+    const approvedPlan = this.readApprovedResearchPlan(campaign.approvedResearchPlan, campaign.query, campaign.searchPrompt, outputSchema);
     const providerStatus = this.toolRegistry.getSearchProviderStatus();
-    const plan = this.planning.createPlan({
+    const plan = approvedPlan ?? this.planning.createPlan({
       query: campaign.query,
       searchPrompt: campaign.searchPrompt,
       country: campaign.country,
@@ -78,14 +82,15 @@ export class ResearchAgentService {
       uniqueResultCount: uniqueResults.length
     });
 
-    const objective = this.createResearchObjective(campaign.query, campaign.searchPrompt);
+    const objective = approvedPlan?.searchPrompt ?? this.createResearchObjective(campaign.query, campaign.searchPrompt);
     const analyzedResults = await this.analyzeMergedResults(
       campaignId,
       uniqueResults,
       campaign.depth,
       campaign.maxResults,
       outputSchema,
-      objective
+      objective,
+      this.createPreFilterPlan(approvedPlan, objective)
     );
     const qualifiedResults = analyzedResults.filter((result) => result.qualified);
     const stopReason = this.calculateStopReason(qualifiedResults.length, campaign.maxResults, uniqueResults.length, providerStatus.isMockMode);
@@ -129,6 +134,40 @@ export class ResearchAgentService {
     }
 
     return value as Record<string, unknown>;
+  }
+
+  /**
+   * Legge il piano approvato salvato sulla campagna.
+   *
+   * Usata da:
+   * - runCampaign nello stesso service.
+   */
+  private readApprovedResearchPlan(
+    value: Prisma.JsonValue | null,
+    query: string,
+    searchPrompt: string | null,
+    outputSchema: Record<string, unknown> | null
+  ): ResearchExecutionPlan | null {
+    if (!value || Array.isArray(value) || typeof value !== 'object') {
+      return null;
+    }
+
+    const plan = value as unknown as ResearchExecutionPlan;
+    return {
+      ...plan,
+      goal: plan.goal ?? query,
+      searchPrompt: plan.searchPrompt ?? this.createResearchObjective(query, searchPrompt),
+      optimizedQueries: Array.isArray(plan.optimizedQueries) && plan.optimizedQueries.length > 0 ? plan.optimizedQueries : [query],
+      requiredSignals: Array.isArray(plan.requiredSignals) ? plan.requiredSignals : [],
+      negativeSignals: Array.isArray(plan.negativeSignals) ? plan.negativeSignals : [],
+      blockedDomains: Array.isArray(plan.blockedDomains) ? plan.blockedDomains : [],
+      allowedSourceTypes: Array.isArray(plan.allowedSourceTypes) ? plan.allowedSourceTypes : ['direct_source', 'directory_marketplace'],
+      outputSchema: plan.outputSchema ?? outputSchema ?? {},
+      tools: Array.isArray(plan.tools) ? plan.tools : ['configured_search', 'crawler_html', 'rules_classifier'],
+      strategy: plan.strategy ?? 'Strategia non disponibile.',
+      warnings: Array.isArray(plan.warnings) ? plan.warnings : [],
+      aiGenerated: Boolean(plan.aiGenerated)
+    };
   }
 
   /**
@@ -213,7 +252,8 @@ export class ResearchAgentService {
     depth: number,
     maxResults: number,
     outputSchema: Record<string, unknown> | null,
-    objective: string
+    objective: string,
+    preFilterPlan: Pick<ResearchExecutionPlan, 'requiredSignals' | 'negativeSignals' | 'blockedDomains'>
   ) {
     const analyzedResults: AnalyzedResearchResult[] = [];
     let failedCount = 0;
@@ -224,7 +264,7 @@ export class ResearchAgentService {
       }
 
       try {
-        const preEvaluation = this.evaluateDiscoveryResultBeforeCrawl(result, objective);
+        const preEvaluation = this.preFilter.evaluateResult(result, preFilterPlan);
         if (!preEvaluation.shouldCrawl) {
           await this.prisma.searchCampaign.update({
             where: { id: campaignId },
@@ -235,6 +275,9 @@ export class ResearchAgentService {
           });
           await this.log(campaignId, 'pre_filter', `Fonte scartata prima del crawl: ${result.domain}.`, {
             reason: preEvaluation.reason,
+            matchedSignals: preEvaluation.matchedSignals,
+            negativeSignals: preEvaluation.negativeSignals,
+            score: preEvaluation.score,
             title: result.title,
             snippet: result.snippet
           });
@@ -467,6 +510,28 @@ export class ResearchAgentService {
     const hasEnoughResolvedFields = requestedFieldCount === 0 || missingFields.length < requestedFieldCount;
 
     return confidenceScore >= 0.55 && hasEnoughResolvedFields;
+  }
+
+  /**
+   * Crea il piano minimo da usare per il pre-filtro discovery.
+   *
+   * Usata da:
+   * - runCampaign nello stesso service.
+   */
+  private createPreFilterPlan(approvedPlan: ResearchExecutionPlan | null, objective: string) {
+    if (approvedPlan) {
+      return {
+        requiredSignals: approvedPlan.requiredSignals,
+        negativeSignals: approvedPlan.negativeSignals,
+        blockedDomains: approvedPlan.blockedDomains
+      };
+    }
+
+    return {
+      requiredSignals: this.extractRelevantTerms(objective),
+      negativeSignals: ['shopify', 'dropshipping', 'printful', 'printify', 'spocket', 'syncee'],
+      blockedDomains: ['apps.shopify.com', 'community.shopify.com', 'youtube.com', 'youtu.be', 'facebook.com']
+    };
   }
 
   /**

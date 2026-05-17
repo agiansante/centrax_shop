@@ -1,17 +1,54 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CampaignStatus, Prisma } from '@prisma/client';
 import { AgentRunLogService } from '../analysis/agent-run-log.service';
+import { ResearchExecutionPlan, ResearchIntentBuilderService } from '../analysis/research-intent-builder.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CampaignQueueService } from '../queue/queue.service';
-import { CreateCampaignRequestDto } from './create-campaign-request.dto';
+import { CreateCampaignRequestDto, PreviewCampaignPlanRequestDto } from './create-campaign-request.dto';
 
 @Injectable()
 export class CampaignsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly queue: CampaignQueueService,
-    private readonly agentLogs: AgentRunLogService
+    private readonly agentLogs: AgentRunLogService,
+    private readonly intentBuilder: ResearchIntentBuilderService
   ) {}
+
+  /**
+   * Prepara o rivede il piano tecnico prima della creazione campagna.
+   *
+   * Usata da:
+   * - apps/backend/src/modules/campaigns/campaigns.controller.ts
+   *
+   * Riceve richiesta naturale, limiti e possibile revisione.
+   * Restituisce piano tecnico e riepilogo leggibile per il popup frontend.
+   */
+  async previewPlan(dto: PreviewCampaignPlanRequestDto) {
+    const plan = await this.intentBuilder.buildPlan({
+      userRequest: dto.userRequest,
+      depth: dto.depth ?? 2,
+      maxResults: dto.maxResults ?? 10,
+      currentPlan: dto.currentPlan,
+      revisionRequest: dto.revisionRequest
+    });
+
+    return {
+      plan,
+      summary: {
+        goal: plan.goal,
+        entityType: plan.entityType,
+        importantSignals: plan.requiredSignals,
+        negativeSignals: plan.negativeSignals,
+        blockedDomains: plan.blockedDomains,
+        outputSchema: plan.outputSchema,
+        tools: plan.tools,
+        strategy: plan.strategy,
+        warnings: plan.warnings,
+        aiGenerated: plan.aiGenerated
+      }
+    };
+  }
 
   /**
    * Salva una nuova campagna in stato bozza per l'utente autenticato.
@@ -22,18 +59,25 @@ export class CampaignsService {
    * Riceve ownerId dal JWT e dati campagna dal DTO.
    */
   create(ownerId: string, dto: CreateCampaignRequestDto) {
+    const approvedPlan = this.readApprovedPlan(dto);
+    const outputSchema = approvedPlan?.outputSchema ?? dto.outputSchema ?? {
+      name: 'string',
+      url: 'string',
+      summary: 'string',
+      sourceType: 'string',
+      confidenceScore: 'number'
+    };
+    const query = approvedPlan?.optimizedQueries[0] ?? dto.query ?? dto.userRequest;
+    const searchPrompt = approvedPlan?.searchPrompt ?? dto.searchPrompt;
+
     return this.prisma.searchCampaign.create({
       data: {
         ownerId,
-        query: dto.query,
-        searchPrompt: dto.searchPrompt,
-        outputSchema: (dto.outputSchema ?? {
-          name: 'string',
-          url: 'string',
-          summary: 'string',
-          sourceType: 'string',
-          confidenceScore: 'number'
-        }) as Prisma.InputJsonValue,
+        query,
+        userRequest: dto.userRequest,
+        searchPrompt,
+        outputSchema: outputSchema as Prisma.InputJsonValue,
+        approvedResearchPlan: approvedPlan ? this.intentBuilder.toJson(approvedPlan) : undefined,
         country: dto.country,
         language: dto.language ?? 'it',
         depth: dto.depth ?? 2,
@@ -43,6 +87,20 @@ export class CampaignsService {
         currentAnalyzedUrl: null
       }
     });
+  }
+
+  /**
+   * Legge il piano approvato dal DTO in forma compatibile con il backend.
+   *
+   * Usata da:
+   * - create nello stesso service.
+   */
+  private readApprovedPlan(dto: CreateCampaignRequestDto): ResearchExecutionPlan | null {
+    if (!dto.approvedResearchPlan) {
+      return null;
+    }
+
+    return dto.approvedResearchPlan as unknown as ResearchExecutionPlan;
   }
 
   /**

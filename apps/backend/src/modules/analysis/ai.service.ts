@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { AiProviderAnalyzeInput, AiProviderConnector } from './ai-provider-connector.types';
+import type { ResearchExecutionPlan } from './research-intent-builder.service';
+import type { ResearchToolDescriptor } from './research-tool.types';
 import { ExtractedEvidence } from './rules.service';
 
 const ServiceProfileSchema = z.object({
@@ -42,9 +44,73 @@ export interface CatalogExtractionInput {
   evidence: ExtractedEvidence[];
 }
 
+export interface ResearchExecutionPlanInput {
+  userRequest: string;
+  depth: number;
+  maxResults: number;
+  currentPlan?: Record<string, unknown>;
+  revisionRequest?: string;
+  tools: ResearchToolDescriptor[];
+  providerStatus: unknown;
+}
+
+export interface ResearchExecutionPlanAiResult {
+  plan: Partial<ResearchExecutionPlan> | null;
+  error: string | null;
+  errorType: 'not_configured' | 'provider_error' | 'invalid_json' | 'invalid_schema' | 'unknown' | null;
+}
+
+const FlexibleStringArraySchema = z.preprocess((value) => {
+  if (typeof value === 'string') {
+    return [value];
+  }
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item;
+      }
+
+      if (!item || Array.isArray(item) || typeof item !== 'object') {
+        return null;
+      }
+
+      const record = item as Record<string, unknown>;
+      return record.name ?? record.query ?? record.value ?? record.text ?? record.warning ?? record.message ?? null;
+    })
+    .filter((item): item is string => typeof item === 'string');
+}, z.array(z.string()).default([]));
+
+const ResearchExecutionPlanSchema = z.object({
+  goal: z.string(),
+  entityType: z.string().default('entita_da_catalogare'),
+  searchPrompt: z.string(),
+  optimizedQueries: FlexibleStringArraySchema,
+  requiredSignals: FlexibleStringArraySchema,
+  negativeSignals: FlexibleStringArraySchema,
+  blockedDomains: FlexibleStringArraySchema,
+  allowedSourceTypes: FlexibleStringArraySchema,
+  outputSchema: z.record(z.unknown()).default({}),
+  tools: FlexibleStringArraySchema,
+  strategy: z.string(),
+  warnings: FlexibleStringArraySchema
+});
+
+class ResearchPlanJsonParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ResearchPlanJsonParseError';
+  }
+}
+
 @Injectable()
 export class AiService implements AiProviderConnector {
   readonly name = 'openai';
+  private readonly logger = new Logger(AiService.name);
   private readonly client?: OpenAI;
 
   constructor(private readonly config: ConfigService) {
@@ -125,7 +191,7 @@ export class AiService implements AiProviderConnector {
           {
             role: 'system',
             content:
-              'Sei un agente generalista di ricerca e catalogazione. Estrai dati verificabili dal testo fornito secondo outputSchema. Non sei specializzato in dropshipping: valuta qualsiasi dominio richiesto. Classifica sourceType come direct_source, directory_marketplace, article_reference, forum_social, media_page, non_operational o unknown. Restituisci JSON con fields, sourceType, confidenceScore, qualificationReason, unresolvedFields.'
+              'Sei un agente generalista di ricerca e catalogazione. Estrai solo dati verificabili dal testo fornito secondo outputSchema. Non inventare telefono, indirizzo, citta, email o prezzi: se non sono presenti, imposta il campo a null e aggiungilo a unresolvedFields. Non sei specializzato in dropshipping: valuta qualsiasi dominio richiesto. Classifica sourceType come direct_source, directory_marketplace, article_reference, forum_social, media_page, non_operational o unknown. Restituisci JSON con fields, sourceType, confidenceScore, qualificationReason, unresolvedFields.'
           },
           {
             role: 'user',
@@ -147,6 +213,124 @@ export class AiService implements AiProviderConnector {
     } catch {
       return this.fallbackCatalogExtraction(input);
     }
+  }
+
+  /**
+   * Crea un piano ricerca ottimizzato dalla richiesta naturale dell'utente.
+   *
+   * Usata da:
+   * - apps/backend/src/modules/analysis/research-intent-builder.service.ts
+   *
+   * Riceve tool disponibili, provider configurati e limiti campagna.
+   * Restituisce un piano tecnico o un errore diagnostico non sensibile.
+   */
+  async createResearchExecutionPlan(input: ResearchExecutionPlanInput): Promise<ResearchExecutionPlanAiResult> {
+    if (!this.client) {
+      return {
+        plan: null,
+        error: 'Provider AI non configurato: OPENAI_API_KEY assente nel backend.',
+        errorType: 'not_configured'
+      };
+    }
+
+    const model = this.config.get<string>('OPENAI_MODEL') ?? 'gpt-4o-mini';
+    try {
+      const completion = await this.client.chat.completions.create({
+        model,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Sei il planner del cervello ricerca Centrax. Trasforma la richiesta libera in un piano tecnico ottimizzato per i tool disponibili. Restituisci solo JSON con goal, entityType, searchPrompt, optimizedQueries, requiredSignals, negativeSignals, blockedDomains, allowedSourceTypes, outputSchema, tools, strategy, warnings. optimizedQueries deve essere array di stringhe query. tools deve contenere solo nomi tool eseguibili disponibili: configured_search, crawler_html, rules_classifier. Non inserire tavily_search, serpapi_search o altri provider diretti in tools: sono provider dietro configured_search. Nella strategy puoi citare il provider selezionato solo come provider usato da configured_search, senza promettere provider non selezionati. outputSchema deve descrivere i campi finali utili per valutare i risultati, non lo schema tecnico del provider ricerca. Scegli campi output verificabili come name, url, summary, city, address, phone, sourceType, confidenceScore quando coerenti. Inserisci domini e segnali negativi quando aiutano a evitare risultati fuori tema.'
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              userRequest: input.userRequest,
+              depth: input.depth,
+              maxResults: input.maxResults,
+              currentPlan: input.currentPlan,
+              revisionRequest: input.revisionRequest,
+              availableTools: input.tools,
+              providerStatus: input.providerStatus
+            })
+          }
+        ]
+      });
+
+      const content = completion.choices[0]?.message.content ?? '{}';
+      const parsedContent = this.parseResearchPlanJson(content);
+      const plan = ResearchExecutionPlanSchema.parse(parsedContent);
+      return { plan, error: null, errorType: null };
+    } catch (error) {
+      const diagnostic = this.createResearchPlanDiagnosticError(error, model);
+      this.logger.warn(`Planner AI non disponibile: ${diagnostic.error}`);
+      return diagnostic;
+    }
+  }
+
+  /**
+   * Converte la risposta testuale del planner in JSON e isola errori di parsing.
+   *
+   * Usata da:
+   * - createResearchExecutionPlan nello stesso service.
+   */
+  private parseResearchPlanJson(content: string) {
+    try {
+      return JSON.parse(content) as unknown;
+    } catch (error) {
+      throw new ResearchPlanJsonParseError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  /**
+   * Crea un errore diagnostico del planner senza esporre segreti.
+   *
+   * Usata da:
+   * - createResearchExecutionPlan nello stesso service.
+   */
+  private createResearchPlanDiagnosticError(error: unknown, model: string): ResearchExecutionPlanAiResult {
+    if (error instanceof ResearchPlanJsonParseError) {
+      return {
+        plan: null,
+        error: `AI configurata ma risposta JSON non valida. Modello: ${model}. Dettaglio: ${error.message}`,
+        errorType: 'invalid_json'
+      };
+    }
+
+    if (error instanceof z.ZodError) {
+      return {
+        plan: null,
+        error: `AI configurata ma piano non conforme allo schema richiesto. Modello: ${model}. Dettaglio: ${error.issues
+          .map((issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`)
+          .slice(0, 3)
+          .join('; ')}`,
+        errorType: 'invalid_schema'
+      };
+    }
+
+    if (error instanceof OpenAI.APIError) {
+      return {
+        plan: null,
+        error: `Errore provider OpenAI durante planning. Modello: ${model}. Status: ${error.status ?? 'n/d'}. Codice: ${error.code ?? 'n/d'}. Tipo: ${error.type ?? 'n/d'}.`,
+        errorType: 'provider_error'
+      };
+    }
+
+    if (error instanceof Error) {
+      return {
+        plan: null,
+        error: `Errore planner AI non classificato. Modello: ${model}. Messaggio: ${error.message}`,
+        errorType: 'unknown'
+      };
+    }
+
+    return {
+      plan: null,
+      error: `Errore planner AI non classificato. Modello: ${model}.`,
+      errorType: 'unknown'
+    };
   }
 
   /**
@@ -196,16 +380,26 @@ export class AiService implements AiProviderConnector {
     const fields: Record<string, unknown> = {};
     const schema = input.outputSchema ?? {};
     const plainText = input.text.replace(/\s+/g, ' ').trim();
+    const intentionallyUnresolvedFields: string[] = [];
 
     for (const fieldName of Object.keys(schema)) {
       if (fieldName === 'url') {
         fields[fieldName] = input.url;
       } else if (fieldName === 'name') {
         fields[fieldName] = input.title ?? input.domain;
+      } else if (this.isSensitiveContactField(fieldName)) {
+        fields[fieldName] = null;
+        intentionallyUnresolvedFields.push(fieldName);
       } else if (fieldName.toLowerCase().includes('evidence')) {
-        fields[fieldName] = input.evidence[0]?.snippet ?? plainText.slice(0, 500);
+        fields[fieldName] = input.evidence[0]?.snippet ?? null;
+        if (!fields[fieldName]) {
+          intentionallyUnresolvedFields.push(fieldName);
+        }
       } else {
-        fields[fieldName] = plainText.slice(0, 500) || null;
+        fields[fieldName] = fieldName.toLowerCase().includes('summary') ? plainText.slice(0, 500) || null : null;
+        if (!fields[fieldName]) {
+          intentionallyUnresolvedFields.push(fieldName);
+        }
       }
     }
 
@@ -224,7 +418,7 @@ export class AiService implements AiProviderConnector {
       sourceType: this.detectSourceType(input.url),
       confidenceScore: plainText ? 0.55 : 0.2,
       qualificationReason: plainText ? 'Fallback locale: testo disponibile e campi compilati parzialmente.' : 'Fallback locale: testo non disponibile.',
-      unresolvedFields
+      unresolvedFields: Array.from(new Set([...intentionallyUnresolvedFields, ...unresolvedFields]))
     };
   }
 
@@ -252,6 +446,17 @@ export class AiService implements AiProviderConnector {
       sourceType: extraction.sourceType === 'unknown' ? this.detectSourceType(input.url) : extraction.sourceType,
       unresolvedFields: Array.from(new Set([...extraction.unresolvedFields, ...unresolvedFields]))
     };
+  }
+
+  /**
+   * Riconosce campi che non devono essere riempiti con testo generico nel fallback.
+   *
+   * Usata da:
+   * - fallbackCatalogExtraction nello stesso service.
+   */
+  private isSensitiveContactField(fieldName: string) {
+    const lowerName = fieldName.toLowerCase();
+    return ['phone', 'telefono', 'address', 'indirizzo', 'city', 'citta', 'email', 'price', 'prezzo'].some((token) => lowerName.includes(token));
   }
 
   /**

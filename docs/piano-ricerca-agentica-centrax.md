@@ -17,6 +17,16 @@ Aggiornamento 2026-05-13:
 - Tavily e SerpAPI sono usabili tramite `DiscoveryService` quando configurati, mentre gli altri provider sono descritti come predisposti;
 - la milestone `M-017` e in `in_test` finche non viene verificata una campagna con provider reale configurato.
 
+Aggiornamento 2026-05-14:
+
+- la UI creazione campagna mostra solo richiesta libera, `depth` e `maxResults`;
+- il backend espone `POST /campaigns/preview-plan` per trasformare la richiesta libera in piano tecnico prima della creazione;
+- il popup riepiloga obiettivo, segnali importanti, segnali negativi, domini esclusi, strategia, tool e formato output;
+- l'utente puo chiedere una revisione testuale del piano oppure confermare con **Crea campagna**;
+- il piano approvato viene salvato in `approvedResearchPlan` e alimenta query, output schema e pre-filtro discovery;
+- aggiunto `DiscoveryPreFilterService` per scartare fonti prima del crawl usando segnali e domini del piano;
+- Tavily e SerpAPI non aggiungono piu suffissi Shopify/dropshipping hardcoded.
+
 ## Regola generalista
 
 Ogni risultato deve essere valutato in base all'obiettivo della campagna, non in base a categorie fisse del progetto.
@@ -55,9 +65,9 @@ Il test generalista `venditori macchine luxury usate Lombardia` ha confermato ch
 
 Prossimo blocco tecnico consigliato:
 
-- `DiscoveryPreFilterService`;
-- `ResearchQueryPlannerService` piu strutturato;
-- scoring pre-crawl con termini richiesti, termini vietati, dominio, luogo, tipo fonte;
+- test manuale del popup piano con provider reale;
+- `ResearchQueryPlannerService`/intent builder ancora piu strutturato se il piano AI non e stabile;
+- scoring pre-crawl piu fine con termini richiesti, termini vietati, dominio, luogo, tipo fonte;
 - test automatico sul caso `macchine luxury usate Lombardia`.
 
 ## Obiettivo funzionale

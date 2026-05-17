@@ -14,7 +14,7 @@ export class DiscoveryService {
   constructor(private readonly config: ConfigService) {}
 
   /**
-   * Cerca servizi dropshipping usando il provider configurato.
+   * Cerca pagine web usando il provider configurato.
    *
    * Usata da:
    * - apps/backend/src/modules/analysis/analysis.service.ts
@@ -47,7 +47,7 @@ export class DiscoveryService {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         api_key: this.config.get<string>('TAVILY_API_KEY'),
-        query: `${query} dropshipping Shopify integration ${country ?? ''}`.trim(),
+        query: this.addCountryToQuery(query, country),
         max_results: maxResults
       })
     });
@@ -69,7 +69,7 @@ export class DiscoveryService {
     const params = new URLSearchParams({
       api_key: this.config.get<string>('SERPAPI_API_KEY') ?? '',
       engine: 'google',
-      q: `${query} dropshipping Shopify integration ${country ?? ''}`.trim(),
+      q: this.addCountryToQuery(query, country),
       num: String(maxResults)
     });
     const response = await fetch(`https://serpapi.com/search.json?${params}`);
@@ -108,6 +108,16 @@ export class DiscoveryService {
         source: 'mock'
       }
     ];
+  }
+
+  /**
+   * Aggiunge il paese alla query senza introdurre bias di dominio.
+   *
+   * Usata da:
+   * - searchTavily e searchSerpApi nello stesso service.
+   */
+  private addCountryToQuery(query: string, country?: string) {
+    return `${query} ${country ?? ''}`.trim();
   }
 
   /**

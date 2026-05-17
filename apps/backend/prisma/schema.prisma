@@ -43,8 +43,10 @@ model User {
 model SearchCampaign {
   id              String           @id @default(cuid())
   query           String
+  userRequest     String?
   searchPrompt    String?
   outputSchema    Json?
+  approvedResearchPlan Json?
   country         String?
   language        String?          @default("it")
   depth           Int              @default(2)

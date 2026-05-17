@@ -610,3 +610,296 @@ File coinvolti:
 - `docs/diario-giornaliero.md`.
 
 Prossimo passo: domani riprendere da `M-017` con focus su ranking/pre-filtro e qualita estrazione generalista.
+
+### Flusso richiesta libera e preview piano campagna
+
+Area: backend, frontend, ricerca, agent, database, docs.
+
+Il form creazione campagna e stato semplificato: l'utente vede solo una textarea per descrivere cosa vuole cercare, piu `depth` e `maxResults`. Il backend prepara un piano con `POST /campaigns/preview-plan`; il frontend mostra un popup con obiettivo, segnali, domini esclusi, strategia, tool e formato output. Dal popup l'utente puo chiedere una revisione testuale oppure confermare la creazione.
+
+Decisione:
+
+- `query`, `searchPrompt` e `outputSchema` restano campi interni per compatibilita worker;
+- il nuovo piano approvato viene salvato in `approvedResearchPlan`;
+- il pre-filtro usa segnali e domini esclusi generati dal piano;
+- se l'AI non e configurata, il sistema genera fallback esplicito e non finge ottimizzazione AI.
+
+File coinvolti:
+
+- `apps/backend/prisma/schema.prisma`;
+- `apps/backend/src/modules/campaigns/*`;
+- `apps/backend/src/modules/analysis/research-intent-builder.service.ts`;
+- `apps/backend/src/modules/analysis/discovery-pre-filter.service.ts`;
+- `apps/backend/src/modules/analysis/ai.service.ts`;
+- `apps/backend/src/modules/analysis/research-agent.service.ts`;
+- `apps/frontend/src/api.ts`;
+- `apps/frontend/src/ui/DashboardPage.tsx`;
+- `docs/api.md`;
+- `docs/milestone.md`;
+- `docs/ripresa-lavoro.md`;
+- `docs/piano-ricerca-agentica-centrax.md`.
+
+Verifica:
+
+- build backend Docker passata;
+- build frontend Docker passata;
+- stack locale Docker Compose avviato, migrazione Prisma applicata e `GET /health` ok;
+- verifica browser del form e popup piano riuscita con fallback locale;
+- build locale non usabile per Node 16, come gia noto nel progetto.
+
+Prossimo passo: applicare la migrazione Prisma in ambiente locale e testare manualmente una campagna con richiesta `venditori macchine luxury usate Lombardia`.
+
+### Piano Centrax Search Test1 quality gate 70%
+
+Area: test, ricerca, agent, decisione, docs.
+
+Definita la fase ufficiale di test e sperimentazione del cervello ricerca. Il blocco di sviluppo passa verso produzione solo se almeno il 70% dei risultati valutati manualmente e utile. La valutazione deve essere fatta sul risultato prodotto dall'agente, con validazione utente `utile` / `non utile`, note opzionali, log, piano approvato e JSON finale.
+
+Decisione:
+
+- creato documento principale `docs/fase-test-sperimentazione-centrax-search.md`;
+- creato blocco memoria `2026-05-14-centrax-search-test1`;
+- aggiunta milestone `M-018`;
+- la prossima modifica tecnica sara trasformare il popup finale campagna in strumento di valutazione ed export JSON test.
+
+File coinvolti:
+
+- `docs/fase-test-sperimentazione-centrax-search.md`;
+- `docs/memory/blocks/2026-05-14-centrax-search-test1.md`;
+- `docs/memory/index.md`;
+- `docs/milestone.md`;
+- `docs/ripresa-lavoro.md`;
+- `docs/diario-giornaliero.md`.
+
+Prossimo passo: implementare UI e formato JSON per validazione risultati nel popup finale campagna.
+
+### Debug planner AI in fallback locale
+
+Area: debug, backend, AI, ricerca.
+
+Durante la verifica del popup piano compare il messaggio:
+
+```text
+Provider AI non configurato o piano AI non disponibile: strategia generata con fallback locale.
+```
+
+Controlli fatti:
+
+- `.env.local` contiene `OPENAI_API_KEY` configurata;
+- `.env.local` contiene `OPENAI_MODEL=gpt-4o-mini`;
+- il container backend legge `OPENAI_MODEL=gpt-4o-mini`;
+- backend, frontend e database sono avviati con Docker Compose;
+- la migrazione `20260514000000_research_plan_preview` e stata applicata.
+
+Ipotesi piu probabile:
+
+- `AiService.createResearchExecutionPlan` chiama OpenAI, ma la richiesta fallisce o la risposta non passa lo schema Zod;
+- oggi il metodo cattura l'errore e ritorna `null`, quindi il frontend vede lo stesso messaggio del caso AI non configurata.
+
+Prossimo passo:
+
+- aggiungere diagnostica non sensibile nel planner AI;
+- distinguere chiaramente tra `AI non configurata`, `errore provider AI`, `JSON non valido` e `schema piano non valido`;
+- mostrare nel popup un avviso piu preciso senza esporre segreti.
+
+Aggiornamento debug:
+
+- aggiunta diagnostica nel planner AI;
+- build backend Docker passata;
+- riavviato backend Docker Compose;
+- il popup ora mostra l'errore reale:
+
+```text
+AI configurata ma piano non conforme allo schema richiesto. Modello: gpt-4o-mini.
+Dettaglio: optimizedQueries.0: Expected string, received object; optimizedQueries.1: Expected string, received object; tools.0: Expected string, received object
+```
+
+Causa individuata:
+
+- OpenAI risponde, quindi la configurazione AI funziona;
+- il piano generato contiene oggetti in `optimizedQueries` e `tools`, mentre lo schema backend accetta solo array di stringhe.
+
+Prossimo passo:
+
+- rendere il prompt piu vincolante sugli array di stringhe;
+- oppure normalizzare in backend oggetti tipo `{ "query": "..." }` e `{ "name": "..." }` in stringhe prima della validazione Zod.
+
+Aggiornamento correzione:
+
+- reso flessibile lo schema del piano AI in `AiService`;
+- `warnings` puo arrivare come stringa e viene normalizzato in array;
+- array come `optimizedQueries`, `tools`, `requiredSignals`, `negativeSignals`, `blockedDomains` e `allowedSourceTypes` accettano anche oggetti semplici e ne estraggono `query`, `name`, `value`, `text`, `warning` o `message`;
+- build backend Docker passata;
+- backend Docker Compose riavviato.
+
+Aggiornamento normalizzazione piano:
+
+- migliorato il prompt planner per chiarire che `tools` deve contenere solo nomi tool e `outputSchema` deve descrivere l'output finale, non la risposta del provider ricerca;
+- filtrati i tool ammessi a `configured_search`, `crawler_html`, `rules_classifier`;
+- se l'AI restituisce lo schema tecnico del provider ricerca come output finale, il backend usa lo schema finale fallback;
+- verifica browser riuscita: popup `Generato da AI`, nessun errore schema, strumenti normalizzati e output finale coerente.
+
+Aggiornamento strumenti provider:
+
+- chiarito che `tavily_search` e gli altri provider non sono tool eseguibili diretti nel piano campagna;
+- `configured_search` e il tool interno che usa il provider configurato, per esempio Tavily o SerpAPI;
+- normalizzazione tool aggiornata: alias provider come `tavily_search`, `serpapi_search`, `brave_search`, `google_cse_search`, `exa_search`, `you_search` vengono mappati a `configured_search`;
+- il piano garantisce sempre catena minima `configured_search`, `crawler_html`, `rules_classifier`;
+- prompt planner aggiornato per non promettere provider non selezionati e per spiegare che i provider stanno dietro `configured_search`;
+- build backend Docker passata e backend Docker Compose riavviato.
+
+Esito:
+
+- ritestata la generazione piano ricerca;
+- la parte che interpreta la richiesta utente e aggiorna schema output/strategia ora funziona bene;
+- il problema su `warnings`, tool provider e strumenti incoerenti e considerato risolto;
+- si puo proseguire con la fase successiva: validazione risultati utile/non utile e quality gate 70%.
+
+### Test dropshipping Shopify: pre-filtro troppo aggressivo
+
+Area: test, ricerca, agent, pre-filtro, frontend.
+
+Eseguito un test con richiesta orientata a servizi dropshipping con forte integrazione Shopify. La discovery ha funzionato, ma il pre-filtro ha scartato tutte le fonti prima del crawl.
+
+Risultato osservato:
+
+```json
+{
+  "rawResultCount": 24,
+  "uniqueResultCount": 16,
+  "qualifiedResults": 0,
+  "requestedResults": 10,
+  "stopReason": "Ricerca terminata per esaurimento fonti disponibili: 0 qualificate su 16 domini unici."
+}
+```
+
+Domini scartati prima del crawl:
+
+- `ifgecommerce.com`;
+- `shopify.com`;
+- `scaleorder.com`;
+- `apps.shopify.com`;
+- `hoplix.com`;
+- `dsidesign.it`;
+- `minea.com`;
+- `help.shopify.com`;
+- `reddit.com`;
+- `inventorysource.com`;
+- `prodigi.com`;
+- `zendrop.com`;
+- `youtube.com`;
+- `firebearstudio.com`;
+- `trendsi.com`;
+- `facebook.com`.
+
+Decisione:
+
+- il pre-filtro deve mostrare nel terminale agente la motivazione dettagliata dello scarto;
+- il pre-filtro va reso meno aggressivo quando Shopify/dropshipping sono segnali positivi della richiesta;
+- fonti come `apps.shopify.com` o `shopify.com` possono essere informative/marketplace utili in una ricerca Shopify, anche se non sempre sono fonte operativa finale;
+- prima di rifare il test bisogna rendere leggibili `reason`, `matchedSignals`, `negativeSignals` e punteggio pre-crawl nel popup terminale.
+
+Prossimo passo:
+
+- aggiornare `DashboardPage` per mostrare metadata dei log `pre_filter`;
+- rivedere `DiscoveryPreFilterService` usando il piano approvato per non trattare Shopify come segnale negativo quando e richiesto.
+
+Aggiornamento correzione:
+
+- il terminale agente ora mostra nei log `pre_filter`: `reason`, `matchedSignals`, `negativeSignals`, `score`, `title` e `snippet`;
+- il backend salva questi campi nei metadata del log quando una fonte viene scartata prima del crawl;
+- `DiscoveryPreFilterService` ignora i segnali negativi che coincidono con segnali positivi richiesti dal piano, inclusi casi come `drop shipping` richiesto e `dropshipping` negativo;
+- `ResearchIntentBuilderService` pulisce gli stessi conflitti gia in fase di piano, anche nel fallback locale;
+- aggiunto test unitario per evitare regressioni su Shopify/dropshipping richiesti come segnali positivi.
+
+Ritest scenario dropshipping/Shopify:
+
+```json
+{
+  "prima_diagnostica": {
+    "rawResultCount": 22,
+    "uniqueResultCount": 15,
+    "qualifiedCount": 8,
+    "rejectedCount": 7,
+    "preFilterScarti": 3
+  },
+  "dopo_regola_anti_conflitto": {
+    "rawResultCount": 25,
+    "uniqueResultCount": 19,
+    "qualifiedCount": 10,
+    "rejectedCount": 4,
+    "preFilterScarti": 0,
+    "stopReason": "Raggiunto il numero massimo di fonti qualificate richieste."
+  }
+}
+```
+
+Verifica:
+
+- `docker compose -f infra/local/docker-compose.yml run --rm backend npm run test` passato;
+- `docker compose -f infra/local/docker-compose.yml run --rm backend npm run build` passato;
+- `docker compose -f infra/local/docker-compose.yml run --rm frontend npm run build` passato;
+- build locale non usabile per Node 16, come gia noto.
+
+Prossimo passo: valutare manualmente le 10 fonti qualificate e implementare la UI `utile/non utile` con calcolo quality gate 70%.
+
+### Ritest utente ancora tutto scartato e spinner preparazione
+
+Area: frontend, backend, pre-filtro, test.
+
+L'utente ha rilanciato lo scenario dropshipping/Shopify e ha visto ancora 0 fonti qualificate su 18 domini unici. Dal terminale incollato mancavano ancora i dettagli `reason`, `matchedSignals`, `negativeSignals`, `score`, `title` e `snippet`, quindi la prova stava usando codice backend/frontend precedente o una pagina non ricaricata.
+
+Decisione:
+
+- riavviati `backend` e `frontend` con Docker Compose;
+- aggiunto spinner sul pulsante `Prepara ricerca` durante `previewPlan.isPending`;
+- reso il pre-filtro ancora piu tollerante: se trova un segnale forte richiesto come `shopify`, `dropshipping`, `drop`, `shipping`, `integration` o `integrazione` e non trova segnali negativi reali, consente il crawl anche se il piano richiede molti altri campi;
+- aggiunto test unitario per il caso in cui il piano contenga molti campi output come segnali richiesti ma la fonte abbia un forte segnale Shopify.
+
+Verifica:
+
+- `docker compose -f infra/local/docker-compose.yml run --rm backend npm run test` passato;
+- `docker compose -f infra/local/docker-compose.yml run --rm backend npm run build` passato;
+- `docker compose -f infra/local/docker-compose.yml run --rm frontend npm run build` passato;
+- `docker compose -f infra/local/docker-compose.yml restart backend frontend` eseguito.
+
+Prossimo passo: refresh completo browser e nuova campagna; i log di una campagna gia eseguita con codice vecchio non possono recuperare metadata non salvati.
+
+### Correzione pre-filtro su segnali negativi fuzzy
+
+Area: backend, test, ricerca.
+
+Dopo il ritest utente i log dettagliati hanno mostrato il problema reale: risultati chiaramente pertinenti come AutoDS, Prodigi, Zendrop e Inventory Source venivano scartati anche con molti segnali positivi trovati. La causa era `non-dropshipping` nei segnali negativi del piano: il matcher fuzzy lo interpretava come match di `dropshipping` e penalizzava tutte le fonti pertinenti.
+
+Decisione:
+
+- i segnali positivi possono usare alias e varianti (`drop shipping`, `dropshipping`, `shiping`, `integration`, `integrazione`);
+- i segnali negativi invece devono usare match esplicito, senza espansione semantica;
+- aggiunto runner `scripts/run-centrax-search-test1.mjs` per creare campagna, eseguirla, recuperare piano/log/output/risultati e calcolare una stima del gate 70%.
+
+Esito ciclo automatico:
+
+```json
+{
+  "campaignId": "cmp60bu2r0001nw3upburfxq3",
+  "rawResultCount": 28,
+  "uniqueResultCount": 21,
+  "analyzedCount": 13,
+  "qualifiedCount": 10,
+  "rejectedCount": 3,
+  "failedCount": 0,
+  "usefulCount": 8,
+  "evaluatedCount": 10,
+  "usefulRate": 0.8,
+  "passed70": true,
+  "stopReason": "Raggiunto il numero massimo di fonti qualificate richieste."
+}
+```
+
+Verifica:
+
+- test backend Docker passati: 8 test;
+- build backend Docker passata;
+- runner automatico eseguito con provider reale Tavily/OpenAI.
+
+Prossimo passo: migliorare il gate umano nel frontend, perche il runner usa una stima euristica e non sostituisce ancora la validazione manuale.

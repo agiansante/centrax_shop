@@ -15,6 +15,7 @@
     "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
     "test": "npm run test -w apps/backend && npm run test -w apps/frontend",
     "lint": "npm run lint -w apps/backend && npm run lint -w apps/frontend",
+    "test:centrax-search": "node scripts/run-centrax-search-test1.mjs",
     "prisma:generate": "npm run prisma:generate -w apps/backend",
     "prisma:migrate": "npm run prisma:migrate -w apps/backend"
   },
